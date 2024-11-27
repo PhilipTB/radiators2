@@ -1,8 +1,88 @@
-rad_db=xl("RadiatorDatabase[#All]", headers=True)
-rooms=xl("Rooms[#All]", headers=True)
-max_sizes=xl("RoomEmittersMaxSizes", headers=True)
 
+def load_dataframes_from_excel():
+    rad_db = xl("RadiatorDatabase[#All]", headers=True)
+    rooms = xl("Rooms[#All]", headers=True)
+    max_sizes = xl("RoomEmittersMaxSizes", headers=True)
+    return rad_db, rooms, max_sizes
+
+# Home - a collection of Rooms
 class Home:
+    # rooms = { 'Room Name': Room(name. temp, heat_loss) }
+    def __init__(self, rooms):
+        self.rooms = rooms
+
+    @classmethod
+    def rooms_from_dataframe(cls, rooms_df):
+        room_to_rads = {}
+        for index, room in rooms_df.iterrows():
+            print(room)
+            room_to_rads[room['Room Name']] = Room(
+                room['Room Name'],
+                room['Temperature'],
+                room['Heat Loss']
+            )
+
+        Home(room_to_rads)
+
+# managed as a Dataframe
+class RadiatorDatabase:
+    def __init__(self, radiator_database):
+        self.rad_db = radiator_database
+        
+
+# Room - A named room with set point temperature and a heat loss
+#      - name needs to be unique
+class Room:
+    def __init__(self, name, temperature, heat_loss_w):
+        self.name = name
+        self.temperature = temperature
+        self.heat_loss_w = heat_loss_w
+        self.radiator_locations = {}
+
+    # length,width in mm, type='Modern'|'ModernGreen'|'Column'|'TowelRail',
+    # max_sub_type='K1'|'K2'|3 etc. status='Replace&Remove'|'Available Space'|'Retain'
+    def add_potential_radiator_location(self, length, width, type, max_sub_type, status, existing_radiator=None):
+        radiator_locations = RadiatorLocation(length, width, type, max_sub_type, status, existing_radiator)
+
+# RadiatorLocation - space for radiators on wall, including potentially an existing radiator
+#                  - multiple locations per room
+class RadiatorLocation:
+    def __init__(self, name, length, width, type, max_sub_type, status, existing_radiator):
+        self.name = name
+        self.length = length
+        self.width = width
+        self.type = type
+        self.width = width
+        self.type = type
+        self.max_sub_type = max_sub_type
+        self.status = status
+        self.existing_radiator = existing_radiator
+
+class Radiator:
+    def __init__(self, name, type, sub_type, length, height, n, w_at_dt50, cost):
+        self.name = name
+        self.type = type
+        self.sub_type = type
+        self. length = length
+        self.height = height
+        self.n = n
+        self.w_at_dt50 = w_at_dt50
+        self.cost = cost
+        
+    @classmethod
+    def radiator_from_dataframe(cls, radiator_df):
+        Radiator(
+            radiator_df['Key'],
+            radiator_df['Type'],
+            radiator_df['Subtype'],
+            radiator_df['Length'],
+            radiator_df['Height'],
+            radiator_df['N'],
+            radiator_df['W @ dt 50'],
+            radiator_df['£'],
+        )
+
+class Home1:
     def __init__(self, rooms, radiators, rad_db):
         self.rooms = rooms
         self.rads = self.extract_radiators_to_rooms(rooms, radiators, rad_db)
@@ -10,11 +90,11 @@ class Home:
     def extract_radiators_to_rooms(self, rooms, radiators, rad_db):
         room_to_rads = {}
         for index, room in rooms.iterrows():
-            room_to_rads[room['Room Name']] = Room(room, radiators[room['Room Name'] == radiators['Room Name']], rad_db)
+            room_to_rads[room['Room Name']] = Room1(room, radiators[room['Room Name'] == radiators['Room Name']], rad_db)
 
         room_to_rads
 
-class Room:
+class Room1:
     def __init__(self, room, radiators_spaces, rad_db):
         self.room = room
         self.radiators_spaces = radiators_spaces
@@ -56,7 +136,13 @@ class Room:
 #create output table
 assigned_rads = pd.DataFrame(columns=['Room Name', 'Length', 'Height', 'Existing', 'Rad@55FT', 'Rad@50FT', 'Rad@45FT', 'Rad@40FT', 'Rad@35FT'])
 
-home = Home(rooms, max_sizes, rad_db)
+rad_db, rooms, max_sizes = load_dataframes_from_excel()
+
+homex = Home.rooms_from_dataframe(rooms)
+
+print(homex)
+
+home = Home1(rooms, max_sizes, rad_db)
 print('Created homes')
 # copy max_sizes input to assigned_rads output
 for index, row in max_sizes.iterrows():
