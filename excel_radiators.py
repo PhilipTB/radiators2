@@ -8,21 +8,27 @@ def load_dataframes_from_excel():
 # Home - a collection of Rooms
 class Home:
     # rooms = { 'Room Name': Room(name. temp, heat_loss) }
-    def __init__(self, rooms):
-        self.rooms = rooms
+    def __init__(self, room_to_rads):
+        self.rooms = room_to_rads
 
     @classmethod
     def rooms_from_dataframe(cls, rooms_df):
         room_to_rads = {}
         for index, room in rooms_df.iterrows():
-            print(room)
-            room_to_rads[room['Room Name']] = Room(
-                room['Room Name'],
-                room['Temperature'],
-                room['Heat Loss']
-            )
+            name = room['Room Name']
+            if name != None:
+                print("Adding room>>>>>>>>>>>>>>>>>>", room)
+                room_to_rads[room['Room Name']] = Room(
+                    room['Room Name'],
+                    room['Temperature'],
+                    room['Heat Loss']
+                )
 
-        Home(room_to_rads)
+        return Home(room_to_rads)
+
+    def room(self, name):
+        print("Searching for", name)
+        return self.rooms[name]
 
 # managed as a Dataframe
 class RadiatorDatabase:
@@ -37,22 +43,22 @@ class Room:
         self.name = name
         self.temperature = temperature
         self.heat_loss_w = heat_loss_w
-        self.radiator_locations = {}
+        self.radiator_locations = []
 
     # length,width in mm, type='Modern'|'ModernGreen'|'Column'|'TowelRail',
     # max_sub_type='K1'|'K2'|3 etc. status='Replace&Remove'|'Available Space'|'Retain'
-    def add_potential_radiator_location(self, length, width, type, max_sub_type, status, existing_radiator=None):
-        radiator_locations = RadiatorLocation(length, width, type, max_sub_type, status, existing_radiator)
+    def add_potential_radiator_location(self, length, height, type, max_sub_type, status, existing_radiator=None):
+        print("Adding", type)
+        location = RadiatorLocation(length, height, type, max_sub_type, status, existing_radiator)
+        print("And", location)
+        self.radiator_locations.append(location)
 
 # RadiatorLocation - space for radiators on wall, including potentially an existing radiator
 #                  - multiple locations per room
 class RadiatorLocation:
-    def __init__(self, name, length, width, type, max_sub_type, status, existing_radiator):
-        self.name = name
+    def __init__(self, length, height, type, max_sub_type, status, existing_radiator):
         self.length = length
-        self.width = width
-        self.type = type
-        self.width = width
+        self.height = height
         self.type = type
         self.max_sub_type = max_sub_type
         self.status = status
@@ -81,6 +87,16 @@ class Radiator:
             radiator_df['W @ dt 50'],
             radiator_df['£'],
         )
+
+def add_radiator_locations_to_rooms(home, radiator_locations_df):
+    print("Got here add_radiator_locations_to_rooms")
+    print(home)
+    
+    for index, row in radiator_locations_df.iterrows():
+        room_name = row['Room Name']
+        room = home.room(room_name)
+        print(room)
+        room.add_potential_radiator_location(row['Length'], row['Height'], row['Type'], row['Max Subtype'], row['Status'])
 
 class Home1:
     def __init__(self, rooms, radiators, rad_db):
@@ -138,9 +154,18 @@ assigned_rads = pd.DataFrame(columns=['Room Name', 'Length', 'Height', 'Existing
 
 rad_db, rooms, max_sizes = load_dataframes_from_excel()
 
+print("Got here starting")
 homex = Home.rooms_from_dataframe(rooms)
+print("Got here sssssss")
+print(homex)
+radiator_database = RadiatorDatabase(rad_db)
+
+add_radiator_locations_to_rooms(homex, max_sizes)
 
 print(homex)
+
+
+
 
 home = Home1(rooms, max_sizes, rad_db)
 print('Created homes')
