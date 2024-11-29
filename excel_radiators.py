@@ -29,12 +29,7 @@ class Home:
     def room(self, name):
         print("Searching for", name)
         return self.rooms[name]
-
-# managed as a Dataframe
-class RadiatorDatabase:
-    def __init__(self, radiator_database):
-        self.rad_db = radiator_database
-        
+      
 
 # Room - A named room with set point temperature and a heat loss
 #      - name needs to be unique
@@ -48,9 +43,7 @@ class Room:
     # length,width in mm, type='Modern'|'ModernGreen'|'Column'|'TowelRail',
     # max_sub_type='K1'|'K2'|3 etc. status='Replace&Remove'|'Available Space'|'Retain'
     def add_potential_radiator_location(self, length, height, type, max_sub_type, status, existing_radiator=None):
-        print("Adding", type)
         location = RadiatorLocation(length, height, type, max_sub_type, status, existing_radiator)
-        print("And", location)
         self.radiator_locations.append(location)
 
 # RadiatorLocation - space for radiators on wall, including potentially an existing radiator
@@ -65,6 +58,7 @@ class RadiatorLocation:
         self.existing_radiator = existing_radiator
 
 class Radiator:
+    database = None
     def __init__(self, name, type, sub_type, length, height, n, w_at_dt50, cost):
         self.name = name
         self.type = type
@@ -74,7 +68,19 @@ class Radiator:
         self.n = n
         self.w_at_dt50 = w_at_dt50
         self.cost = cost
+
+    @classmethod
+    def find(cls, description):
+        if not description:
+            return None
+
+        radiator_df = cls.database[description == cls.database['Key']].head(1)
         
+        if radiator_df.empty:
+            return None
+        else:
+            return cls.radiator_from_dataframe(radiator_df)
+
     @classmethod
     def radiator_from_dataframe(cls, radiator_df):
         Radiator(
@@ -89,14 +95,13 @@ class Radiator:
         )
 
 def add_radiator_locations_to_rooms(home, radiator_locations_df):
-    print("Got here add_radiator_locations_to_rooms")
-    print(home)
     
     for index, row in radiator_locations_df.iterrows():
         room_name = row['Room Name']
         room = home.room(room_name)
         print(room)
-        room.add_potential_radiator_location(row['Length'], row['Height'], row['Type'], row['Max Subtype'], row['Status'])
+        existing_rad = Radiator.find(row['Existing Radiator'])
+        room.add_potential_radiator_location(row['Length'], row['Height'], row['Type'], row['Max Subtype'], row['Status'], existing_rad)
 
 class Home1:
     def __init__(self, rooms, radiators, rad_db):
@@ -150,37 +155,34 @@ class Room1:
         return w.iloc[0]
 
 #create output table
-assigned_rads = pd.DataFrame(columns=['Room Name', 'Length', 'Height', 'Existing', 'Rad@55FT', 'Rad@50FT', 'Rad@45FT', 'Rad@40FT', 'Rad@35FT'])
+def create_results():
+    assigned_rads = pd.DataFrame(columns=['Room Name', 'Length', 'Height', 'Existing', 'Rad@55FT', 'Rad@50FT', 'Rad@45FT', 'Rad@40FT', 'Rad@35FT'])
+
+if False:
+
+    home = Home1(rooms, max_sizes, rad_db)
+    print('Created homes')
+    # copy max_sizes input to assigned_rads output
+    for index, row in max_sizes.iterrows():
+        new_row = {'Room Name': row['Room Name'], 'Length': row['Length'],'Height': row['Height'], 'Existing': row['Existing Radiator']}
+        assigned_rads = assigned_rads._append(new_row, ignore_index=True)
+
+    for index, row in assigned_rads.iterrows():
+        assigned_rads.at[index, 'Rad@55FT'] = index * 6
+
+    rooms['Heat Loss'].sum()
+    num_row= max_sizes.shape[0]
+    num_row= assigned_rads.shape[0]
+
+    assigned_rads
 
 rad_db, rooms, max_sizes = load_dataframes_from_excel()
 
-print("Got here starting")
 homex = Home.rooms_from_dataframe(rooms)
-print("Got here sssssss")
-print(homex)
-radiator_database = RadiatorDatabase(rad_db)
+
+Radiator.database = rad_db
 
 add_radiator_locations_to_rooms(homex, max_sizes)
 
-print(homex)
-
-
-
-
-home = Home1(rooms, max_sizes, rad_db)
-print('Created homes')
-# copy max_sizes input to assigned_rads output
-for index, row in max_sizes.iterrows():
-    new_row = {'Room Name': row['Room Name'], 'Length': row['Length'],'Height': row['Height'], 'Existing': row['Existing Radiator']}
-    assigned_rads = assigned_rads._append(new_row, ignore_index=True)
-
-for index, row in assigned_rads.iterrows():
-    assigned_rads.at[index, 'Rad@55FT'] = index * 6
-
-rooms['Heat Loss'].sum()
-num_row= max_sizes.shape[0]
-num_row= assigned_rads.shape[0]
-
-assigned_rads
-
+create_results()
 
