@@ -27,8 +27,28 @@ class Home:
         return Home(room_to_rads)
 
     def room(self, name):
-        print("Searching for", name)
         return self.rooms[name]
+    
+    def calculate_radiators(self, flow_rate_columns):
+        assigned_rads = pd.DataFrame(columns=['Room Name', 'Length', 'Height'] + list(flow_rate_columns.keys()))
+        print('Calculating radiators')
+        for column_name, flow_temperature in flow_rate_columns.items():
+            print("Calculating at", flow_temperature)
+            for room_name, room in self.rooms.items():
+                print("Calculating rooms", room_name)
+                room.calculate(flow_temperature)
+
+        return assigned_rads
+    
+    def add_radiator_locations_to_rooms(self, radiator_locations_df):
+    
+        for index, row in radiator_locations_df.iterrows():
+            room_name = row['Room Name']
+            room = self.room(room_name)
+            print(room)
+            existing_rad = Radiator.find(row['Existing Radiator'])
+            room.add_potential_radiator_location(row['Length'], row['Height'], row['Type'], row['Max Subtype'], row['Status'], existing_rad)
+
       
 
 # Room - A named room with set point temperature and a heat loss
@@ -45,6 +65,11 @@ class Room:
     def add_potential_radiator_location(self, length, height, type, max_sub_type, status, existing_radiator=None):
         location = RadiatorLocation(length, height, type, max_sub_type, status, existing_radiator)
         self.radiator_locations.append(location)
+
+    def calculate(self, flow_temperature):
+        for loc in self.radiator_locations:
+            print("        loc:", loc.existing_radiator)
+
 
 # RadiatorLocation - space for radiators on wall, including potentially an existing radiator
 #                  - multiple locations per room
@@ -93,6 +118,12 @@ class Radiator:
             radiator_df['W @ dt 50'],
             radiator_df['£'],
         )
+    
+    @classmethod
+    def wattage(cls, radiator, flow_temperature, room_temperature, n):
+        factor = pow((flow_temperature - room_temperature - 2.5)/50, n)
+        return factor * radiator.w_at_dt50
+
 
 def add_radiator_locations_to_rooms(home, radiator_locations_df):
     
@@ -154,9 +185,6 @@ class Room1:
         w = factor * radiator_w_at_50c
         return w.iloc[0]
 
-#create output table
-def create_results():
-    assigned_rads = pd.DataFrame(columns=['Room Name', 'Length', 'Height', 'Existing', 'Rad@55FT', 'Rad@50FT', 'Rad@45FT', 'Rad@40FT', 'Rad@35FT'])
 
 if False:
 
@@ -178,11 +206,20 @@ if False:
 
 rad_db, rooms, max_sizes = load_dataframes_from_excel()
 
+flow_rate_column_map = {
+    'Existing@65FT': 65,
+    'Rad@55FT':      55,
+    'Rad@50FT':      50,
+    'Rad@45FT':      45,
+    'Rad@40FT':      40,
+    'Rad@35FT':      35
+}
+
 homex = Home.rooms_from_dataframe(rooms)
 
 Radiator.database = rad_db
 
-add_radiator_locations_to_rooms(homex, max_sizes)
+homex.add_radiator_locations_to_rooms(max_sizes)
 
-create_results()
+homex.calculate_radiators(flow_rate_column_map)
 
