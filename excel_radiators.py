@@ -14,7 +14,6 @@ class Home:
         for index, room in rooms_df.iterrows():
             name = room['Room Name']
             if name != None:
-                print("Adding room>>>>>>>>>>>>>>>>>>", room)
                 room_to_rads[room['Room Name']] = Room(
                     room['Room Name'],
                     room['Temperature'],
@@ -29,12 +28,9 @@ class Home:
     def calculate_radiators(self, flow_rate_columns):
         col_names = ['Room Name', 'Length', 'Height'] + list(flow_rate_columns.keys())
         assigned_rads = pd.DataFrame(columns=col_names)
-        print('Calculating radiators')
         for room_name, room in self.rooms.items():
-            print("Calculating rooms", room_name)
             w = room.calculate(flow_rate_columns.values())
             for ww in w:
-                print("Wattage = ", [room_name] + ww)
                 assigned_rads.loc[len(assigned_rads)] = [room_name] + ww
 
         return assigned_rads
