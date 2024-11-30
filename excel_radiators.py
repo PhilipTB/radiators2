@@ -1,10 +1,7 @@
 
-def load_dataframes_from_excel():
-    rad_db = xl("RadiatorDatabase[#All]", headers=True)
-    rooms = xl("Rooms[#All]", headers=True)
-    max_sizes = xl("RoomEmittersMaxSizes", headers=True)
-    return rad_db, rooms, max_sizes
 
+
+#=======================================================================================================
 # Home - a collection of Rooms
 class Home:
     # rooms = { 'Room Name': Room(name. temp, heat_loss) }
@@ -30,13 +27,15 @@ class Home:
         return self.rooms[name]
     
     def calculate_radiators(self, flow_rate_columns):
-        assigned_rads = pd.DataFrame(columns=['Room Name', 'Length', 'Height'] + list(flow_rate_columns.keys()))
+        col_names = ['Room Name', 'Length', 'Height'] + list(flow_rate_columns.keys())
+        assigned_rads = pd.DataFrame(columns=col_names)
         print('Calculating radiators')
-        for column_name, flow_temperature in flow_rate_columns.items():
-            print("Calculating at", flow_temperature)
-            for room_name, room in self.rooms.items():
-                print("Calculating rooms", room_name)
-                room.calculate(flow_temperature)
+        for room_name, room in self.rooms.items():
+            print("Calculating rooms", room_name)
+            w = room.calculate(flow_rate_columns.values())
+            for ww in w:
+                print("Wattage = ", [room_name] + ww)
+                assigned_rads.loc[len(assigned_rads)] = [room_name] + ww
 
         return assigned_rads
     
@@ -45,12 +44,11 @@ class Home:
         for index, row in radiator_locations_df.iterrows():
             room_name = row['Room Name']
             room = self.room(room_name)
-            print(room)
             existing_rad = Radiator.find(row['Existing Radiator'])
             room.add_potential_radiator_location(row['Length'], row['Height'], row['Type'], row['Max Subtype'], row['Status'], existing_rad)
 
       
-
+#=======================================================================================================
 # Room - A named room with set point temperature and a heat loss
 #      - name needs to be unique
 class Room:
@@ -66,11 +64,23 @@ class Room:
         location = RadiatorLocation(length, height, type, max_sub_type, status, existing_radiator)
         self.radiator_locations.append(location)
 
-    def calculate(self, flow_temperature):
+    def calculate(self, flow_temperatures):
+        loc_results = []
         for loc in self.radiator_locations:
-            print("        loc:", loc.existing_radiator)
+            watts = []
+            if loc.existing_radiator != None:
+                for flow_temperature in flow_temperatures:
+                    w = loc.existing_radiator.wattage(flow_temperature, self.temperature)
+                    watts.append(w)
+        
+            else:
+                watts = [0.0] * len(flow_temperatures)
 
+            loc_results.append([loc.length, loc.height] + watts)
 
+        return loc_results
+
+#=======================================================================================================
 # RadiatorLocation - space for radiators on wall, including potentially an existing radiator
 #                  - multiple locations per room
 class RadiatorLocation:
@@ -82,6 +92,7 @@ class RadiatorLocation:
         self.status = status
         self.existing_radiator = existing_radiator
 
+#=======================================================================================================
 class Radiator:
     database = None
     def __init__(self, name, type, sub_type, length, height, n, w_at_dt50, cost):
@@ -94,6 +105,10 @@ class Radiator:
         self.w_at_dt50 = w_at_dt50
         self.cost = cost
 
+    def wattage(self, flow_temperature, room_temperature):
+        factor = pow((flow_temperature - room_temperature - 2.5)/50, self.n)
+        return factor * self.w_at_dt50
+    
     @classmethod
     def find(cls, description):
         if not description:
@@ -107,8 +122,10 @@ class Radiator:
             return cls.radiator_from_dataframe(radiator_df)
 
     @classmethod
-    def radiator_from_dataframe(cls, radiator_df):
-        Radiator(
+    def radiator_from_dataframe(cls, rad_df):
+        radiator_df = rad_df.squeeze()
+
+        return Radiator(
             radiator_df['Key'],
             radiator_df['Type'],
             radiator_df['Subtype'],
@@ -118,91 +135,14 @@ class Radiator:
             radiator_df['W @ dt 50'],
             radiator_df['£'],
         )
-    
-    @classmethod
-    def wattage(cls, radiator, flow_temperature, room_temperature, n):
-        factor = pow((flow_temperature - room_temperature - 2.5)/50, n)
-        return factor * radiator.w_at_dt50
 
 
-def add_radiator_locations_to_rooms(home, radiator_locations_df):
-    
-    for index, row in radiator_locations_df.iterrows():
-        room_name = row['Room Name']
-        room = home.room(room_name)
-        print(room)
-        existing_rad = Radiator.find(row['Existing Radiator'])
-        room.add_potential_radiator_location(row['Length'], row['Height'], row['Type'], row['Max Subtype'], row['Status'], existing_rad)
-
-class Home1:
-    def __init__(self, rooms, radiators, rad_db):
-        self.rooms = rooms
-        self.rads = self.extract_radiators_to_rooms(rooms, radiators, rad_db)
-    
-    def extract_radiators_to_rooms(self, rooms, radiators, rad_db):
-        room_to_rads = {}
-        for index, room in rooms.iterrows():
-            room_to_rads[room['Room Name']] = Room1(room, radiators[room['Room Name'] == radiators['Room Name']], rad_db)
-
-        room_to_rads
-
-class Room1:
-    def __init__(self, room, radiators_spaces, rad_db):
-        self.room = room
-        self.radiators_spaces = radiators_spaces
-        self.rad_db = rad_db
-        self.find_existing_radiators_in_database()
-
-    def find_existing_radiators_in_database(self):
-        print(self.room['Room Name'])
-        for index, radiators_space in self.radiators_spaces.iterrows():
-            print('=========================================================')
-            print(radiators_space)
-            existing_rad_description = radiators_space['Existing Radiator']
-            if existing_rad_description != 'None':
-                rad = self.rad_db[existing_rad_description == rad_db['Key']].head(1)
-                print("    rad lookup:", existing_rad_description)
-                if not rad.empty:
-                    flow_rate_column_map = {
-                        'Existing': 65,
-                        'Rad@55FT': 55,
-                        'Rad@50FT': 50,
-                        'Rad@45FT': 45,
-                        'Rad@40FT': 40,
-                        'Rad@35FT': 35
-                    }
-
-                    for col_name, flow_temp in flow_rate_column_map.items():
-                        rad_ft_w = self.calculate_rad_wattage(flow_temp, self.room['Temperature'], rad)
-                        print(col_name, flow_temp, rad_ft_w)
-                    rad_40_w = self.calculate_rad_wattage(40.0, self.room['Temperature'], rad)
-                    print('rad_40_w', rad_40_w)
-
-    def calculate_rad_wattage(self, flow_t, room_t, radiator):
-        radiator_w_at_50c = radiator['W @ dt 50']
-        n = radiator['N']
-        factor = pow((flow_t - room_t - 2.5)/50, 1.3)
-        w = factor * radiator_w_at_50c
-        return w.iloc[0]
-
-
-if False:
-
-    home = Home1(rooms, max_sizes, rad_db)
-    print('Created homes')
-    # copy max_sizes input to assigned_rads output
-    for index, row in max_sizes.iterrows():
-        new_row = {'Room Name': row['Room Name'], 'Length': row['Length'],'Height': row['Height'], 'Existing': row['Existing Radiator']}
-        assigned_rads = assigned_rads._append(new_row, ignore_index=True)
-
-    for index, row in assigned_rads.iterrows():
-        assigned_rads.at[index, 'Rad@55FT'] = index * 6
-
-    rooms['Heat Loss'].sum()
-    num_row= max_sizes.shape[0]
-    num_row= assigned_rads.shape[0]
-
-    assigned_rads
+#=======================================================================================================
+def load_dataframes_from_excel():
+    rad_db = xl("RadiatorDatabase[#All]", headers=True)
+    rooms = xl("Rooms[#All]", headers=True)
+    max_sizes = xl("RoomEmittersMaxSizes", headers=True)
+    return rad_db, rooms, max_sizes
 
 rad_db, rooms, max_sizes = load_dataframes_from_excel()
 
