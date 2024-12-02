@@ -1,6 +1,3 @@
-
-
-
 #=======================================================================================================
 # Home - a collection of Rooms
 class Home:
@@ -61,13 +58,61 @@ class Room:
         self.radiator_locations.append(location)
 
     def calculate(self, flow_temperatures):
+        radiators_by_flow_temperature = {}
+
+        for flow_temperature in flow_temperatures:
+            radiators_by_flow_temperature[flow_temperature] = self.calculate_at_flow_temperature_formatted_result(flow_temperature)
+
+        res =  self.flatten_results_by_flow_temperature(radiators_by_flow_temperature)
+        return res
+    
+    # flatten multiple radiator locations x multiple flow temperatures for excel presentation
+    def flatten_results_by_flow_temperature(self, radiators_by_flow_temperature):
+        results = []
+        rad_locs_by_ft = list(radiators_by_flow_temperature.values())
+
+        for index, loc in enumerate(self.radiator_locations):
+            r = [loc.length, loc.height]
+            r.extend([el[index] for el in rad_locs_by_ft])
+            results.append(r)
+
+        return results
+
+    # array of wattages for each radiator location
+    def calculate_at_flow_temperature(self, flow_temperature):
+        formatted_results_by_radiator_locations = []
+        for loc in self.radiator_locations:
+            watts = 0.0
+            if loc.existing_radiator != None:
+                w = loc.existing_radiator.wattage(flow_temperature, self.temperature)
+                watts = Room.formatted_result(loc.existing_radiator, "NA",50, w)
+
+            formatted_results_by_radiator_locations.append(watts)
+
+        return formatted_results_by_radiator_locations
+    
+    # array of wattages for each radiator location
+    def calculate_at_flow_temperature_formatted_result(self, flow_temperature):
+        formatted_results_by_radiator_locations = []
+        for loc in self.radiator_locations:
+            watts = 0.0
+            if loc.existing_radiator != None:
+                w = loc.existing_radiator.wattage(flow_temperature, self.temperature)
+                watts = Room.formatted_result(loc.existing_radiator, "NA",50, w)
+
+            formatted_results_by_radiator_locations.append(watts)
+
+        return formatted_results_by_radiator_locations
+    
+    def calculate_deprecated(self, flow_temperatures):
         loc_results = []
         for loc in self.radiator_locations:
             watts = []
             if loc.existing_radiator != None:
                 for flow_temperature in flow_temperatures:
                     w = loc.existing_radiator.wattage(flow_temperature, self.temperature)
-                    watts.append(w)
+                    f_w = Room.formatted_result(loc.existing_radiator, "NA",50, w)
+                    watts.append(f_w)
         
             else:
                 watts = [0.0] * len(flow_temperatures)
@@ -75,6 +120,11 @@ class Room:
             loc_results.append([loc.length, loc.height] + watts)
 
         return loc_results
+    
+    @classmethod
+    def formatted_result(cls, radiator, status, labour_cost, watts_at_flow_temperature):
+        res  =  f"{radiator.name}:{status}-£{radiator.cost}-£{labour_cost}-{watts_at_flow_temperature:.0f}W"
+        return res
 
 #=======================================================================================================
 # RadiatorLocation - space for radiators on wall, including potentially an existing radiator
@@ -138,18 +188,13 @@ def load_dataframes_from_excel():
     rad_db = xl("RadiatorDatabase[#All]", headers=True)
     rooms = xl("Rooms[#All]", headers=True)
     max_sizes = xl("RoomEmittersMaxSizes", headers=True)
-    return rad_db, rooms, max_sizes
+    labour_costs = xl("LabourCosts", headers=True)
+    flow_rate_scenario = xl("FlowRateScenario", headers=True)
+    return rad_db, rooms, max_sizes, labour_costs, flow_rate_scenario
 
-rad_db, rooms, max_sizes = load_dataframes_from_excel()
+rad_db, rooms, max_sizes, labour_costs, flow_rate_scenario = load_dataframes_from_excel()
 
-flow_rate_column_map = {
-    'Existing@65FT': 65,
-    'Rad@55FT':      55,
-    'Rad@50FT':      50,
-    'Rad@45FT':      45,
-    'Rad@40FT':      40,
-    'Rad@35FT':      35
-}
+flow_rate_column_map = dict(zip(flow_rate_scenario.get("FlowRateDescription"), flow_rate_scenario.get("FlowRate")))
 
 homex = Home.rooms_from_dataframe(rooms)
 
