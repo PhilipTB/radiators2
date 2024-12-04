@@ -10,6 +10,9 @@ class RadiatorLocation:
         self.status = status
         self.existing_radiator = existing_radiator
 
+    def __str__(self):
+        return f"{self.length}x{self.height}:{self.type},{self.max_sub_type}:{self.status}={self.existing_radiator}"
+
 #=======================================================================================================
 class Radiator:
     database = None
@@ -24,8 +27,12 @@ class Radiator:
         self.cost = cost
 
     def wattage(self, flow_temperature, room_temperature):
-        factor = pow((flow_temperature - room_temperature - 2.5)/50, self.n)
+        factor = Radiator.flow_temperature_adjustment_factor(flow_temperature, room_temperature, self.n)
         return factor * self.w_at_dt50
+    
+    @classmethod
+    def flow_temperature_adjustment_factor(cls, flow_temperature, room_temperature, n):
+        return pow((flow_temperature - room_temperature - 2.5)/50.0, n)
     
     @classmethod
     def find(cls, description):
