@@ -21,7 +21,6 @@ class Room:
         for flow_temperature in flow_temperatures:
             radiators_by_flow_temperature_formatted[flow_temperature] = self.calculate_at_flow_temperature_formatted_result(flow_temperature)
             radiators_by_flow_temperature[flow_temperature] = self.calculate_at_flow_temperature(flow_temperature)
-            print(self.name, flow_temperature, radiators_by_flow_temperature[flow_temperature])
 
         res =  self.flatten_results_by_flow_temperature(radiators_by_flow_temperature_formatted)
         return res
@@ -40,8 +39,10 @@ class Room:
 
     # array of wattages for each radiator location
     def calculate_at_flow_temperature(self, flow_temperature):
-        room_watts = self.total_watts_at_flow_temperature(flow_temperature)
-        if self.heat_loss_w > room_watts:
+        print("    calculate_at_flow_temperature", flow_temperature)
+        rad_watts_at_flow_t = self.total_watts_at_flow_temperature(flow_temperature)
+        print("    upgrade rad?", self.heat_loss_w,rad_watts_at_flow_t, self.heat_loss_w > rad_watts_at_flow_t)
+        if self.heat_loss_w > rad_watts_at_flow_t:
             self.upgrade_radiators(flow_temperature)
 
         formatted_results_by_radiator_locations = []
@@ -55,13 +56,65 @@ class Room:
 
         return formatted_results_by_radiator_locations
 
-    
     def upgrade_radiators(self, flow_temperature):
-        print("Rads need upgrading at", self.heat_loss_w, flow_temperature)
+        print("    Rads need upgrading at", self.heat_loss_w, flow_temperature)
+        factor = 1.0 / Radiator.flow_temperature_adjustment_factor(flow_temperature, self.temperature, 1.3)
+        required_watts_at_dt50 = self.heat_loss_w * factor
         for loc in self.radiator_locations:
             if loc.existing_radiator != None:
-                print("Trying to upgrade", loc)
+                print("        existing rad upgrade", flow_temperature, loc.height, loc.length)
+                print("        needs @ dt50", required_watts_at_dt50, "w, existing", loc.existing_radiator.w_at_dt50)
+
+                if loc.existing_radiator.w_at_dt50 < required_watts_at_dt50:
+                    new_rad = Radiator.find_cost_effective_radiator(loc.type, loc.max_sub_type, loc.length, loc.height, required_watts_at_dt50)
+                    print("    Upgraded radiator", new_rad)
+
+    def total_watts_at_flow_temperature(self, flow_temperature):
+        room_watts = 0.0
+        for loc in self.radiator_locations:
+            watts = 0.0
+            if loc.existing_radiator != None:
+                radiator_watts = loc.existing_radiator.wattage(flow_temperature, self.temperature)
+                room_watts += radiator_watts
+
+
+        return room_watts
     
+    # array of wattages for each radiator location
+    def calculate_at_flow_temperature_formatted_result(self, flow_temperature):
+        formatted_results_by_radiator_locations = []
+        for loc in self.radiator_locations:
+            watts = 0.0
+            if loc.existing_radiator != None:
+                w = loc.existing_radiator.wattage(flow_temperature, self.temperature)
+                watts = Room.formatted_result(loc.existing_radiator, "NA",50, w)
+
+            formatted_results_by_radiator_locations.append(watts)
+
+        return formatted_results_by_radiator_locations
+    
+    def calculate_deprecated(self, flow_temperatures):
+        loc_results = []
+        for loc in self.radiator_locations:
+            watts = []
+            if loc.existing_radiator != None:
+                for flow_temperature in flow_temperatures:
+                    w = loc.existing_radiator.wattage(flow_temperature, self.temperature)
+                    f_w = Room.formatted_result(loc.existing_radiator, "NA",50, w)
+                    watts.append(f_w)
+        
+            else:
+                watts = [0.0] * len(flow_temperatures)
+
+            loc_results.append([loc.length, loc.height] + watts)
+
+        return loc_results
+    
+    @classmethod
+    def formatted_result(cls, radiator, status, labour_cost, watts_at_flow_temperature):
+        res  =  f"{radiator.name}:{status}-£{radiator.cost}-£{labour_cost}-{watts_at_flow_temperature:.0f}W"
+        return res
+
     def total_watts_at_flow_temperature(self, flow_temperature):
         room_watts = 0.0
         for loc in self.radiator_locations:
