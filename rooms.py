@@ -55,10 +55,26 @@ class Room:
             formatted_results_by_radiator_locations.append(watts)
 
         return formatted_results_by_radiator_locations
+    
+    # https://stackoverflow.com/questions/14040260/how-to-iterate-over-n-dimensions
+    # https://stackoverflow.com/questions/45737880/how-to-iterate-over-this-n-dimensional-dataset
+    def nd_range(start, stop, dims):
+        print("nd_range", start, stop, dims)
+        if not dims:
+            print("    YYY", dims)
+            yield ()
+            return
+        for outer in Room.nd_range(start, stop, dims - 1):
+            for inner in range(start, stop):
+                print("    GGG", outer, " => ", inner, "Dims:", dims)
+                yield outer + (inner,)
 
     def upgrade_radiators(self, flow_temperature):
+        arr = np.random.random([4,5,2,6])
+        print("RRR<<<", arr)
         print("    Rads need upgrading at", self.heat_loss_w, flow_temperature)
         factor = 1.0 / Radiator.flow_temperature_adjustment_factor(flow_temperature, self.temperature, 1.3)
+        print("    Factor", factor, "flow t", flow_temperature, "room t", self.temperature)
         required_watts_at_dt50 = self.heat_loss_w * factor
         for loc in self.radiator_locations:
             if loc.existing_radiator != None:
@@ -68,6 +84,8 @@ class Room:
                 if loc.existing_radiator.w_at_dt50 < required_watts_at_dt50:
                     new_rad = Radiator.find_cost_effective_radiator(loc.type, loc.max_sub_type, loc.length, loc.height, required_watts_at_dt50)
                     print("    Upgraded radiator", new_rad)
+                    print(list(Room.nd_range(1, 3, 3)))
+
 
     def total_watts_at_flow_temperature(self, flow_temperature):
         room_watts = 0.0
