@@ -1,26 +1,6 @@
-
-
-#=======================================================================================================
-def load_dataframes_from_excel():
-    rad_db = xl("RadiatorDatabase[#All]", headers=True)
-    rooms = xl("Rooms[#All]", headers=True)
-    max_sizes = xl("RoomEmittersMaxSizes", headers=True)
-    labour_costs = xl("LabourCosts", headers=True)
-    flow_rate_scenario = xl("FlowRateScenario", headers=True)
-    return rad_db, rooms, max_sizes, labour_costs, flow_rate_scenario
-
-rad_db, rooms, max_sizes, labour_costs, flow_rate_scenario = load_dataframes_from_excel()
-
-flow_rate_column_map = dict(zip(flow_rate_scenario.get("FlowRateDescription"), flow_rate_scenario.get("FlowRate")))
-
-homex = Home.rooms_from_dataframe(rooms)
-
-Radiator.database = rad_db
-
-homex.add_radiator_locations_to_rooms(max_sizes)
-
-homex.calculate_radiators(flow_rate_column_map)
-
+import pandas as pd
+import numpy as np
+from scipy.optimize import minimize
 
 # Sample data for the DataFrame with installation cost
 data = {
@@ -51,22 +31,44 @@ height = df['Height'].values
 width = df['Width'].values
 depth = df['Depth'].values
 
+print("wattage", wattage)
+print("cost", cost)
+print("installation_cost", installation_cost)
+print("height", height)
+print("width", width)
+print("depth", depth)
+
 # Constraints for size check (each radiator must fit in the given dimensions)
 def size_constraints(x):
     """Ensure the selected radiators do not exceed size constraints"""
-    return [
+    z = [
         (x[i] * height[i] <= location_constraints[df.loc[i, 'Location']]['Height']) for i in range(len(x))] + \
         [(x[i] * width[i] <= location_constraints[df.loc[i, 'Location']]['Width']) for i in range(len(x))] + \
         [(x[i] * depth[i] <= location_constraints[df.loc[i, 'Location']]['Depth']) for i in range(len(x))]
+    print("size_constraints", z, "input", x)
+    return z
         
 def optimization_func(x):
     """Objective function: minimize total cost (radiator cost + installation cost)"""
-    return np.dot(cost + installation_cost, x)  # Total cost is sum of cost and installation cost for selected radiators
+    z = np.dot(cost + installation_cost, x) 
+    print("optimization_func", z, "input", x, "cost", cost, "installation_cost", installation_cost)
+    return z # Total cost is sum of cost and installation cost for selected radiators
 
 
 # Constraints to ensure total wattage is greater than 1200
 def total_wattage_constraint(x):
-    return np.dot(wattage, x) - 1200  # The total wattage must be greater than or equal to 1200
+    z = np.dot(wattage, x) - 1200
+    print("total_wattage_constraint", z, type(z), "input", x)
+    return z  # The total wattage must be greater than or equal to 1200
+
+def more_than_one_constraint(x):
+    z = np.sum(x) >= 1
+    print("more_than_one_constraint", z, type(x), "input", x)
+    if np.sum(x) > 1:
+        return 1.0
+    else:
+        return -1.0
+
 
 # Boundaries for each radiator to be selected or not (binary)
 bounds = [(0, 1)] * len(wattage)
@@ -77,7 +79,9 @@ initial_guess = np.zeros(len(wattage))
 # Set up the constraints and bounds for the optimization
 constraints = [
     {'type': 'ineq', 'fun': total_wattage_constraint},  # Total wattage constraint
-    {'type': 'ineq', 'fun': lambda x: np.sum(x) >= 1}  # Ensure at least one radiator is selected
+# {'type': 'ineq', 'fun': lambda x: np.sum(x) >= 1}  # Ensure at least one radiator is selected
+    {'type': 'ineq', 'fun': more_than_one_constraint},
+    {'type': 'ineq', 'fun': size_constraints}
 ]
 
 # Minimize the total cost with constraints
@@ -92,5 +96,4 @@ if result.success:
     print(f"Total Cost: ${total_cost:.2f}")
 else:
     print("Optimization failed:", result.message)
-
 
