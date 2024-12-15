@@ -56,11 +56,29 @@ def load_table_into_dataframe(file_path, sheet_name, table_name):
             data_cols.append(cell.value)
         data_rows.append(data_cols)
 
-    print(data_rows)
-    print("-" * 100)
     df = pd.DataFrame(data_rows[1:], columns=data_rows[0])
+    print("=" * 180)
     print(df)
-    print("." * 100) 
+    print("=" * 180)
+    print("Filtered")
+    print(df[df['Length'] > 2000])
+    print("-" * 180)
+
+    return df
+
+def radiator_choices_at_location(rad_db_df, constraint):
+    df_filt1 = rad_db_df.loc[rad_db_df['Length'] <= constraint['Length']]
+    df_filt2 = df_filt1.loc[df_filt1['Height'] <= constraint['Height']]
+    print("x"*125)
+    print(df_filt2)
+    print("y"*125)
+    return df_filt2
+
+def evaluate_combination(i, rad1, rad2):
+    if i == 4:
+        print("o"*175)
+        print(rad1, type(rad1))
+        print(rad2)
 
 
 # Example usage
@@ -68,8 +86,42 @@ file_path = 'Radiator Database.xlsx'
 sheet_name = 'RadiatorDatabase'
 table_name = 'RadiatorDatabase'
 
-df = load_table_into_dataframe(file_path, sheet_name, table_name)
+rad_db = load_table_into_dataframe(file_path, sheet_name, table_name)
 
+location_constraints = {
+    'Loc1': {'Height': 340, 'Length': 1000, 'Depth': 'K2'},
+    'Loc2': {'Height': 600, 'Length': 1200, 'Depth': 'K3'},
+}
+
+possible_rads_at_location = {}
+for name, constraints in location_constraints.items():
+    print("SSSSSSSSSSSSSSSSSS", name)
+    z = radiator_choices_at_location(rad_db, constraints)
+    print("Got items", type(z), z.shape[0])
+    possible_rads_at_location[name] = z
+
+for name, possible_radiators in possible_rads_at_location.items():
+    print(">" * 150)
+    print(name, possible_radiators.shape[0])
+    print(possible_radiators)
+
+location_names = list(possible_rads_at_location.keys())
+print("Zog Zog", location_names[0])
+loc1_rads = possible_rads_at_location[location_names[0]]
+loc2_rads = possible_rads_at_location[location_names[1]]
+
+print("E"*150)
+print(loc1_rads)
+print("QQQQ", type(possible_rads_at_location))
+
+x = 0
+for i1, rad1 in loc1_rads.iterrows():
+    for i2, rad2 in loc2_rads.iterrows():
+        x += 1
+        evaluate_combination(x, rad1, rad2)
+
+print("Combinations", x)
+exit()
 # Display the first few rows of the DataFrame
 if df is not None:
     print(df.head())
