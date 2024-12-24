@@ -61,6 +61,12 @@ def all_combinations(rad_db, constraints):
     return itertools.product(*possible_rads_at_location)
 
 #============================================================================
+def cost_of_all_radiators(rads):
+    costs = [rad["£"] for rad in rads]
+    watts = [rad["W @ dt 50"] for rad in rads]
+    return [sum(costs), sum(watts)]
+
+#============================================================================
 # Example usage
 file_path = 'Radiator Database.xlsx'
 sheet_name = 'RadiatorDatabase'
@@ -71,18 +77,27 @@ rad_db = load_table_into_dataframe(file_path, sheet_name, table_name)
 location_constraints = {
     'Loc1': {'Height': 600, 'Length': 1000, 'Depth': 'K2'},
     'Loc2': {'Height': 600, 'Length': 1200, 'Depth': 'K3'},
+    'Loc3': {'Height': 600, 'Length': 600, 'Depth': 'K2'},
 }
 
-required_w_at_50c = 3500
+required_w_at_50c = 5000
 
 combos = all_combinations(rad_db, location_constraints)
 
 t0 = time.time()
 x = 0
-for n in combos:
+min_cost = 1000
+min_rads = None
+for rads in combos:
     x += 1
-    print(n)
+    cost, watts = cost_of_all_radiators(rads)
+    if watts > required_w_at_50c:
+        if cost < min_cost:
+            min_cost = cost
+            min_rads = rads
 
 t1 = time.time()
 print("Time taken", t1 - t0)
+print("Min cost", min_cost, min_rads)
+# large = max(combos, key=check_it)
 print("Combos", x)
