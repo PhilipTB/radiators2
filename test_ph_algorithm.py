@@ -58,14 +58,39 @@ def all_combinations(rad_db, constraints):
         rads = radiator_choices_at_location(rad_db, constraint)
         possible_rads_at_location.append(rads.to_dict('records'))
 
-    return itertools.product(*possible_rads_at_location)
+    return list(itertools.product(*possible_rads_at_location))
 
 #============================================================================
-def cost_of_all_radiators(rads):
+def cost_of_all_radiators(rads, room_temperature, flow_temperature):
     costs = [rad["£"] for rad in rads]
-    watts = [rad["W @ dt 50"] for rad in rads]
-    return [sum(costs), sum(watts)]
+    watts = 0.0
+    for rad in rads:
+        watts += wattage_at_flow(rad, room_temperature, flow_temperature)
 
+    return [sum(costs), watts]
+
+#============================================================================
+def wattage_at_flow(rad, room_temperature, flow_temperature):
+    n = rad['N']
+    watts_at_dt_50 = rad["W @ dt 50"]
+    dt = flow_temperature - 2.5 - room_temperature
+    w = watts_at_dt_50 * (dt / 50.0 ) ** n
+    return w
+
+#============================================================================
+def minimum_radiator_cost_combination(combos, room_temperature, flow_temperature):
+    min_cost = 100000
+    min_rads = None
+    print("Got here", flow_temperature)
+    for rads in combos:
+        cost, watts = cost_of_all_radiators(rads, room_temperature, flow_temperature)
+        
+        if watts > minimum_wattage:
+            if cost < min_cost:
+                min_cost = cost
+                min_rads = rads
+    
+    return min_cost
 #============================================================================
 # Example usage
 file_path = 'Radiator Database.xlsx'
@@ -75,29 +100,25 @@ table_name = 'RadiatorDatabase'
 rad_db = load_table_into_dataframe(file_path, sheet_name, table_name)
 
 location_constraints = {
-    'Loc1': {'Height': 600, 'Length': 1000, 'Depth': 'K2'},
-    'Loc2': {'Height': 600, 'Length': 1200, 'Depth': 'K3'},
+    'Loc1': {'Height': 600, 'Length': 2000, 'Depth': 'K2'},
+    'Loc2': {'Height': 600, 'Length': 2000, 'Depth': 'K3'},
     'Loc3': {'Height': 600, 'Length': 600, 'Depth': 'K2'},
+    'Loc4': {'Height': 600, 'Length': 300, 'Depth': 'K3'},
 }
 
-required_w_at_50c = 5000
+minimum_wattage = 1500.0
+flow_temperatures = [50.0, 45.0, 40.0, 35.0]
+room_temperature = 21.0
+costs =  {flow_temperature: [] for flow_temperature in flow_temperatures}
 
 combos = all_combinations(rad_db, location_constraints)
 
 t0 = time.time()
-x = 0
-min_cost = 1000
-min_rads = None
-for rads in combos:
-    x += 1
-    cost, watts = cost_of_all_radiators(rads)
-    if watts > required_w_at_50c:
-        if cost < min_cost:
-            min_cost = cost
-            min_rads = rads
 
+for flow_temperature in flow_temperatures:
+    costs[flow_temperature] = minimum_radiator_cost_combination(combos, room_temperature, flow_temperature)
+
+print(costs)
 t1 = time.time()
 print("Time taken", t1 - t0)
-print("Min cost", min_cost, min_rads)
-# large = max(combos, key=check_it)
-print("Combos", x)
+
