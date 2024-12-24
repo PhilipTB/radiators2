@@ -52,7 +52,10 @@ def cost_of_all_radiators(rads, labour_costs, room_temperature, flow_temperature
     for i, rad in enumerate(rads):
         rad_cost = rad["£"]
         labour_cost = labour_costs[i]
-        costs += rad_cost + labour_cost
+
+        if rad_cost > 0.0:
+            costs += rad_cost + labour_cost
+
         watts += wattage_at_flow(rad, room_temperature, flow_temperature)
 
     return [costs, watts]
@@ -92,6 +95,19 @@ def minimum_room_radiator_costs(rad_db, room_name, constraints):
     cost, rads = minimum_radiator_cost_combination(combos, constraints['location_constraints'], room_temp, flow_temperature, min_watts)
 
     return { 'cost': cost, 'rads': rads }
+
+#============================================================================
+def summarise_costs_by_flow_temperature(costs):
+    costs_by_flow_temperature = {}
+    for flow_temperature, rooms in costs.items():
+        total_cost = 0.0
+        for room_name, data in rooms.items():
+            total_cost += data['cost']
+
+        costs_by_flow_temperature[flow_temperature] = total_cost
+
+    return costs_by_flow_temperature
+
 #============================================================================
 # Example usage
 file_path = 'Radiator Database.xlsx'
@@ -128,7 +144,7 @@ rooms = {
     },
 }  
 
-flow_temperatures = [55.0, 50.0, 45.0, 40.0, 35.0]
+flow_temperatures = [55.0, 52.5, 50.0, 47.5, 45.0, 42.5, 40.0, 37.5, 35.0]
 
 t0 = time.time()
 costs =  {flow_temperature: {} for flow_temperature in flow_temperatures}
@@ -137,10 +153,12 @@ print(costs)
 for flow_temperature in flow_temperatures:
     for room_name, constraints in rooms.items():
         costs[flow_temperature][room_name] = minimum_room_radiator_costs(rad_db, room_name, constraints)
-        
+
 t1 = time.time()
 
 pprint.pp(costs)
+
+pprint.pp(summarise_costs_by_flow_temperature(costs))
 
 print("Time taken", t1 - t0)
 
