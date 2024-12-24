@@ -7,7 +7,6 @@ import time
 import itertools
 import pprint
 
-
 #============================================================================
 def load_table_into_dataframe(file_path, sheet_name, table_name):
     # Load the workbook using openpyxl
@@ -38,21 +37,6 @@ def radiator_choices_at_location(rad_db_df, constraint):
     return df_filt2
 
 #============================================================================
-def evaluate_combination(i, optimal_rads, minimum_cost, rad1, rad2, required_w_at_50c):
-    if rad1["£"] == 0.0 or  rad2["£"] == 0.0:
-        return [optimal_rads, minimum_cost]
-    
-    cost = rad1["£"] + rad2["£"]
-    watts = rad1["W @ dt 50"] + rad2["W @ dt 50"]
-
-    if watts > required_w_at_50c:
-        if minimum_cost == None or cost < minimum_cost:
-            minimum_cost = cost
-            optimal_rads = [rad1, rad2]
-
-    return [optimal_rads, minimum_cost]
-
-#============================================================================
 def all_combinations(rad_db, constraints):
     possible_rads_at_location = []
     for name, constraint in constraints.items():
@@ -62,13 +46,16 @@ def all_combinations(rad_db, constraints):
     return list(itertools.product(*possible_rads_at_location))
 
 #============================================================================
-def cost_of_all_radiators(rads, room_temperature, flow_temperature):
-    costs = [rad["£"] for rad in rads]
+def cost_of_all_radiators(rads, labour_costs, room_temperature, flow_temperature):
+    costs = 0.0
     watts = 0.0
-    for rad in rads:
+    for i, rad in enumerate(rads):
+        rad_cost = rad["£"]
+        labour_cost = labour_costs[i]
+        costs += rad_cost + labour_cost
         watts += wattage_at_flow(rad, room_temperature, flow_temperature)
 
-    return [sum(costs), watts]
+    return [costs, watts]
 
 #============================================================================
 def wattage_at_flow(rad, room_temperature, flow_temperature):
@@ -76,17 +63,20 @@ def wattage_at_flow(rad, room_temperature, flow_temperature):
     watts_at_dt_50 = rad["W @ dt 50"]
     dt = flow_temperature - 2.5 - room_temperature
     w = watts_at_dt_50 * (dt / 50.0 ) ** n
+
     return w
 
 #============================================================================
-def minimum_radiator_cost_combination(combos, location_names, room_temperature, flow_temperature, min_wattage):
+def minimum_radiator_cost_combination(combos, constraints, room_temperature, flow_temperature, min_wattage):
     min_cost = 100000
     min_rads = None
+    location_names = constraints.keys()
+    labour_costs = [rad_location["Labour Cost"] for rad_location in constraints.values()]
 
-    for rads in combos:
-        cost, watts = cost_of_all_radiators(rads, room_temperature, flow_temperature)
+    for i, rads in enumerate(combos):
+        cost, watts = cost_of_all_radiators(rads, labour_costs, room_temperature, flow_temperature)
         
-        if watts > minimum_wattage:
+        if watts > min_wattage:
             if cost < min_cost:
                 min_cost = cost
                 min_rads = dict(zip(location_names, rads)) 
@@ -98,9 +88,8 @@ def minimum_room_radiator_costs(rad_db, room_name, constraints):
     combos = all_combinations(rad_db, constraints['location_constraints'])
     min_watts = constraints['min_wattage']
     room_temp = constraints['room_temperature']
-    location_names = constraints['location_constraints'].keys()
 
-    cost, rads = minimum_radiator_cost_combination(combos, location_names, room_temp, flow_temperature, min_watts)
+    cost, rads = minimum_radiator_cost_combination(combos, constraints['location_constraints'], room_temp, flow_temperature, min_watts)
 
     return { 'cost': cost, 'rads': rads }
 #============================================================================
@@ -114,34 +103,32 @@ rad_db = load_table_into_dataframe(file_path, sheet_name, table_name)
 rooms = {
     'lounge': {
         'location_constraints': {
-            'Loc1': {'Height': 600, 'Length': 2000, 'Depth': 'K2'},
-            'Loc2': {'Height': 600, 'Length': 2000, 'Depth': 'K3'},
-            'Loc3': {'Height': 600, 'Length': 600, 'Depth': 'K2'},
-            'Loc4': {'Height': 600, 'Length': 300, 'Depth': 'K3'}
+            'Loc1': {'Height': 600, 'Length': 2000, 'Depth': 'K2', 'Labour Cost': 95.0},
+            'Loc2': {'Height': 600, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 350.0},
+            'Loc3': {'Height': 600, 'Length': 600, 'Depth': 'K2', 'Labour Cost': 350.0},
+            'Loc4': {'Height': 600, 'Length': 300, 'Depth': 'K3', 'Labour Cost': 350.0}
         },
         'room_temperature': 21.5,
         'min_wattage': 1500
     },
     'bed 1': {
         'location_constraints': {
-            'Loc1': {'Height': 600, 'Length': 2000, 'Depth': 'K2'},
-            'Loc2': {'Height': 600, 'Length': 2000, 'Depth': 'K3'},
+            'Loc1': {'Height': 600, 'Length': 2000, 'Depth': 'K2', 'Labour Cost': 95.0},
+            'Loc2': {'Height': 600, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 95.0}
         },
         'room_temperature': 18,
         'min_wattage': 500
-    }
+    },
+    'bed 2': {
+        'location_constraints': {
+            'Loc1': {'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 95.0}
+        },
+        'room_temperature': 16,
+        'min_wattage': 100
+    },
 }  
 
-location_constraints = {
-    'Loc1': {'Height': 600, 'Length': 2000, 'Depth': 'K2'},
-    'Loc2': {'Height': 600, 'Length': 2000, 'Depth': 'K3'},
-    'Loc3': {'Height': 600, 'Length': 600, 'Depth': 'K2'},
-    'Loc4': {'Height': 600, 'Length': 300, 'Depth': 'K3'},
-}
-
-minimum_wattage = 1500.0
 flow_temperatures = [55.0, 50.0, 45.0, 40.0, 35.0]
-room_temperature = 21.0
 
 t0 = time.time()
 costs =  {flow_temperature: {} for flow_temperature in flow_temperatures}
