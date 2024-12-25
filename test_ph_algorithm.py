@@ -50,9 +50,6 @@ def all_combinations(rad_db, constraints):
             rads.loc[rads['Key'] == constraint['Existing Radiator'],'Labour Cost'] = 0.0
             rads.loc[rads['Key'] == constraint['Existing Radiator'],'Exists'] = True
 
-        print("t" * 100)
-        pprint.pp(rads.loc[rads['£'] < 50.0])
-
         possible_rads_at_location.append(rads.to_dict('records'))
 
     return list(itertools.product(*possible_rads_at_location))
