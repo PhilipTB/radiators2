@@ -44,6 +44,8 @@ def all_combinations(rad_db, constraints):
         rads['Labour Cost'] = constraint['Labour Cost']
         rads['Exists'] = False
 
+        rads.loc[rads['Key'] == 'None','£'] = 0.0
+        rads.loc[rads['Key'] == 'None','Labour Cost'] = 0.0
 
         if 'Existing Radiator' in constraint:
             rads.loc[rads['Key'] == constraint['Existing Radiator'],'£'] = 0.0
@@ -100,8 +102,6 @@ def minimum_radiator_cost_combination(rad_db, combos, constraints, room_temperat
     min_rads = None
     location_names = constraints.keys()
     labour_costs = [rad_location["Labour Cost"] for rad_location in constraints.values()]
-    pprint.pp(constraints)
-    existing_radiators = [find_existing_radiator(rad_db, rad_location.get("Existing Radiator")) for rad_location in constraints.values()]
 
     for i, rads in enumerate(combos):
         cost, watts = cost_of_all_radiators(rads, labour_costs, room_temperature, flow_temperature)
@@ -155,7 +155,7 @@ rooms = {
     },
     'bed 1': {
         'location_constraints': {
-            'Loc1': {'Height': 600, 'Length': 2000, 'Depth': 'K2', 'Labour Cost': 95.0},
+            'Loc1': {'Height': 600, 'Length': 2000, 'Depth': 'K2', 'Labour Cost': 95.0,  'Existing Radiator': 'ModernxK3x1800x600'},
             'Loc2': {'Height': 600, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 95.0}
         },
         'room_temperature': 18,
@@ -163,7 +163,7 @@ rooms = {
     },
     'bed 2': {
         'location_constraints': {
-            'Loc1': {'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 95.0}
+            'Loc1': {'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 95.0,  'Existing Radiator': 'ModernxK3x1800x600'}
         },
         'room_temperature': 16,
         'min_wattage': 1000
