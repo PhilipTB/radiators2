@@ -114,6 +114,23 @@ def minimum_radiator_cost_combination(rad_db, combos, constraints, room_temperat
     return [min_cost, min_rads]
 
 #============================================================================
+def replaced_radiators(room_name, new_radiators, constraints):
+    replaced_rads = []
+
+    for i, loc in enumerate(constraints['location_constraints'].values()):
+        if 'Existing Radiator' in loc:
+            if loc['Existing Radiator'] != list(new_radiators.values())[i]['Key']:
+                replaced_rads.append(
+                    {
+                        'room_name': room_name,
+                        'location': list(new_radiators.keys())[i],
+                        'key':  loc['Existing Radiator']
+                    }
+                )
+
+    return replaced_rads
+
+#============================================================================
 def minimum_room_radiator_costs(rad_db, room_name, constraints):
     combos = all_combinations(rad_db, constraints['location_constraints'])
     min_watts = constraints['min_wattage']
@@ -121,7 +138,9 @@ def minimum_room_radiator_costs(rad_db, room_name, constraints):
 
     cost, rads = minimum_radiator_cost_combination(rad_db, combos, constraints['location_constraints'], room_temp, flow_temperature, min_watts)
 
-    return { 'cost': cost, 'rads': rads }
+    replaced_rads = replaced_radiators(room_name, rads, constraints)
+
+    return { 'cost': cost, 'rads': rads, 'replaced_rads':  replaced_rads}
 
 #============================================================================
 def summarise_costs_by_flow_temperature(costs):
@@ -148,14 +167,14 @@ rooms = {
             'Loc1': {'Height': 600, 'Length': 2000, 'Depth': 'K2', 'Labour Cost': 95.0, 'Existing Radiator': 'ModernxK3x1800x600'},
             'Loc2': {'Height': 600, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 350.0},
             'Loc3': {'Height': 600, 'Length': 600, 'Depth': 'K2', 'Labour Cost': 350.0},
-            'Loc4': {'Height': 600, 'Length': 300, 'Depth': 'K3', 'Labour Cost': 350.0}
+            'Loc4': {'Height': 600, 'Length': 600, 'Depth': 'K3', 'Labour Cost': 350.0}
         },
         'room_temperature': 21.5,
         'min_wattage': 1500
     },
     'bed 1': {
         'location_constraints': {
-            'Loc1': {'Height': 600, 'Length': 2000, 'Depth': 'K2', 'Labour Cost': 95.0,  'Existing Radiator': 'ModernxK3x1800x600'},
+            'Loc1': {'Height': 600, 'Length': 2000, 'Depth': 'K2', 'Labour Cost': 95.0,  'Existing Radiator': 'ModernxK1x800x600'},
             'Loc2': {'Height': 600, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 95.0}
         },
         'room_temperature': 18,
@@ -163,7 +182,21 @@ rooms = {
     },
     'bed 2': {
         'location_constraints': {
-            'Loc1': {'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 95.0,  'Existing Radiator': 'ModernxK3x1800x600'}
+            'Loc1': {'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 95.0,  'Existing Radiator': 'ModernxK2x1400x600'}
+        },
+        'room_temperature': 16,
+        'min_wattage': 1000
+    },
+    'bed 3': {
+        'location_constraints': {
+            'Loc1': {'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 95.0,  'Existing Radiator': 'ModernxK1x1800x600'}
+        },
+        'room_temperature': 16,
+        'min_wattage': 1000
+    },
+    'bed 4': {
+        'location_constraints': {
+            'Loc1': {'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 95.0,  'Existing Radiator': 'ModernxK1x1800x600'}
         },
         'room_temperature': 16,
         'min_wattage': 1000
@@ -171,14 +204,23 @@ rooms = {
 }  
 
 flow_temperatures = [55.0, 52.5, 50.0, 47.5, 45.0, 42.5, 40.0, 37.5, 35.0]
+flow_temperatures = list(range(55, 32, -2))
+flow_temperatures = [55.0, 50.0, 45.0, 40.0]
 
 t0 = time.time()
 costs =  {flow_temperature: {} for flow_temperature in flow_temperatures}
 print(costs)
 
+
 for flow_temperature in flow_temperatures:
+    replaced_rads = []
+
     for room_name, constraints in rooms.items():
-        costs[flow_temperature][room_name] = minimum_room_radiator_costs(rad_db, room_name, constraints)
+        min_rads = minimum_room_radiator_costs(rad_db, room_name, constraints)
+        costs[flow_temperature][room_name] = min_rads
+        replaced_rads += min_rads['replaced_rads']
+
+    pprint.pp(replaced_rads)
 
 t1 = time.time()
 
@@ -187,3 +229,5 @@ pprint.pp(costs)
 pprint.pp(summarise_costs_by_flow_temperature(costs))
 
 print("Time taken", t1 - t0)
+
+
