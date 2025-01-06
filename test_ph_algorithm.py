@@ -163,11 +163,12 @@ def move_replaced_radiators(flow_temperature, costs, replaced_rads):
         rad = find_radiator(rad_db, replaced_rad['Key'])
         replaced_rad['specification'] = rad
 
-    # replacement least valuable radiators first, levaing most for last
+    # replacement least valuable radiators first, leaving most for last
     replaced_rads.sort(key=lambda rad: rad['specification']['£'])
 
     # look to replace new radiators starting with most valuable first
     new_radiators = find_new_radiators(costs)
+    # print("Costs", costs)
 
     for replacement_rad in replaced_rads:
         for new_radiator in new_radiators:
@@ -176,12 +177,30 @@ def move_replaced_radiators(flow_temperature, costs, replaced_rads):
             replacement_watts = wattage_at_flow_temperature(replacement_rad['specification'], room_temperature, flow_temperature)
             new_watts = wattage_at_flow_temperature(new_radiator['radiator'], room_temperature, flow_temperature)
             if replacement_watts > new_watts:
-                print("Potential replacement with enough watts")
-                print("Replacement:", replacement_rad)
-                print("New:", new_radiator)
-                Need to lookup dimensions of new_raidator versus space
+                location_constraint_x = costs[new_radiator['room_name']]['rads'][new_radiator['location_name']]
+                location_constraint = rooms[new_radiator['room_name']]['location_constraints'][new_radiator['location_name']]
+                # print("Potential replacement with enough watts")
+                # print("Replacement:", replacement_rad)
+                # print("New:", new_radiator)
+                print("in", new_radiator['room_name'],  new_radiator['location_name'])
+                print("Location constraint:", location_constraint)
+                print("Locaiton constraint x", location_constraint_x)
+                if radiator_fits(location_constraint, replacement_rad['specification']):
+                    print("LLLLL: Fits: Saving", new_radiator['radiator']['£'])
+                    print("Replacement = ", replacement_rad['specification'])
+                    costs[new_radiator['room_name']]['rads'][new_radiator['location_name']] = dict(costs[new_radiator['room_name']]['rads'][new_radiator['location_name']], **replacement_rad['specification'])
+                    costs[new_radiator['room_name']]['rads'][new_radiator['location_name']]['£'] = 0
+                    break
+                else:
+                    print("LLLLL: Doesnt fit")
+                    print("Zog:", rooms[new_radiator['room_name']]['location_constraints'][new_radiator['location_name']])
 
-    exit()
+#============================================================================
+def radiator_fits(location, radiator):
+    height_ok = radiator['Height'] <= location['Height']
+    length_ok = radiator['Length'] <= location['Length']
+    print("    GGGG: height_ok", height_ok, "length_ok", length_ok)
+    return height_ok and length_ok
 
 #============================================================================
 def minimum_room_radiator_costs(rad_db, room_name, constraints):
