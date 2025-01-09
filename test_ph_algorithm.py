@@ -78,26 +78,37 @@ class Home:
 
         print("Total cost:", total_cost)
 
+        self.move_replaced_radiators(flow_temperature, room_results)
+
         return room_results
 
     def minimal_cost_radiators_in_room(self, room_name, flow_temperature):
-        print("Finding mininum radiator cost for room", room_name, flow_temperature)
         room_choice = self.rooms.loc[self.rooms['name'].eq(room_name)].iloc[0]
         location_choices = self.radiator_constraints.loc[self.radiator_constraints['name'].eq(room_name)]
         room = Room(room_choice, location_choices, self.radiator_database)
         room_result = room.minimal_cost_radiators(flow_temperature)
         room_result['room_name'] = room_name
-        # print("T"*100)
-        # pprint.pp(room_result)
         return room_result
     
     def total_costs(self, room_results):
         return sum(room_result['cost'] for room_result in room_results)
+
+    def extract_replaced_radiators(self, room_results):
+        replaced_rads = []
+
+        for room_result in room_results:
+            if room_result['replaced_radiators']:
+                replaced_rads += room_result['replaced_radiators']
+
+        return replaced_rads
     
-    
-    def move_replaced_radiators(self, flow_temperature, costs, replaced_rads):
+    def move_replaced_radiators(self, flow_temperature, room_results):
         print("-"*100)
         print("Moving Radiators")
+            
+        pprint.pp(room_results)
+
+        replaced_rads = self.extract_replaced_radiators(room_results)
 
         for replaced_rad in replaced_rads:
             rad = find_radiator(rad_db, replaced_rad['Key'])
@@ -138,7 +149,6 @@ class Home:
     def radiator_fits(self, location, radiator):
         height_ok = radiator['Height'] <= location['Height']
         length_ok = radiator['Length'] <= location['Length']
-        print("    GGGG: height_ok", height_ok, "length_ok", length_ok)
         return height_ok and length_ok
     
     @classmethod
@@ -208,16 +218,13 @@ class Room:
         print("Time taken", round(time.time() - t0, 2), "s for", len(combos), "combinations")
 
         replaced_rads = self.replaced_radiators(self.name(), rads, self.location_constraints)
-        
-        # pprint.pp(cost)
-        # pprint.pp(rads)
+
         return {'cost': cost, 'locations': rads, 'replaced_radiators': replaced_rads}
 
     def minimum_radiator_cost_combination(self, combos, constraints, room_temperature, flow_temperature, min_wattage):
         min_cost = 100000
         min_rads = None
-        # print("£"*100)
-        # pprint.pp(constraints)
+
         location_names = constraints['location'].tolist()
 
         labour_costs = constraints['Labour Cost'].tolist()
@@ -316,14 +323,5 @@ test_rooms = create_test_rooms()
 test_constraints = create_test_constraints()
 t1 = time.time()
 home = Home(test_rooms, test_constraints, rad_db)
-pprint.pp(home)
-pprint.pp(home.room_names())
-print(type(home.room_names()))
 x = home.minimal_cost_radiators(50.0)
 print("Time taken", time.time() - t1)
-pprint.pp(x)
-exit()
-
-
-
-
