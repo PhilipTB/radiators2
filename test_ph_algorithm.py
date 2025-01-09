@@ -45,7 +45,7 @@ def create_test_rooms():
 #============================================================================
 def create_test_constraints():
     test_constraints = [
-        { 'name': 'lounge', 'location': 'Loc 1', 'Height': 600, 'Length': 2000, 'Depth': 'K2', 'Labour Cost':  95.0, 'Existing Radiator': 'ModernxK3x1800x600'},
+        { 'name': 'lounge', 'location': 'Loc 1', 'Height': 600, 'Length': 2000, 'Depth': 'K2', 'Labour Cost':  95.0, 'Existing Radiator': 'ModernxK2x1000x600'},
         { 'name': 'lounge', 'location': 'Loc 2', 'Height': 600, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 350.0},
         { 'name': 'lounge', 'location': 'Loc 3', 'Height': 600, 'Length':  600, 'Depth': 'K2', 'Labour Cost': 350.0},
         { 'name': 'lounge', 'location': 'Loc 4', 'Height': 600, 'Length':  600, 'Depth': 'K3', 'Labour Cost': 350.0},
@@ -197,17 +197,21 @@ class Room:
         return self.room.to_dict()[key]
 
     def minimal_cost_radiators(self, flow_temperature):
+        t0 = time.time()
+
         combos = self.all_combinations()
 
         cost, rads = self.minimum_radiator_cost_combination(
                         combos, self.location_constraints,
                         self.room_temperature(), flow_temperature, self.min_wattage())
         
-        # replaced_rads = self.replaced_radiators(self.name(), rads, self.location_constraints)
+        print("Time taken", round(time.time() - t0, 2), "s for", len(combos), "combinations")
+
+        replaced_rads = self.replaced_radiators(self.name(), rads, self.location_constraints)
         
         # pprint.pp(cost)
         # pprint.pp(rads)
-        return {'cost': cost, 'locations': rads}
+        return {'cost': cost, 'locations': rads, 'replaced_radiators': replaced_rads}
 
     def minimum_radiator_cost_combination(self, combos, constraints, room_temperature, flow_temperature, min_wattage):
         min_cost = 100000
@@ -274,26 +278,31 @@ class Room:
         return [costs, watts]
     
     def replaced_radiators(self, room_name, new_radiators, constraints):
-        print("_"*100, "replaced_radiators")
-        pprint.pp(room_name)
-        pprint.pp(new_radiators)
-        pprint.pp(constraints)
         replaced_rads = []
 
-        for i, loc in enumerate(constraints.values()):
-            print(">", loc)
-            if 'Existing Radiator' in loc:
-                if loc['Existing Radiator'] != list(new_radiators.values())[i]['Key']:
+        for i, location in constraints.iterrows():
+            if 'Existing Radiator' in location:
+                
+                new_rad_key = new_radiators[location['location']]['Key']
+                if self.radiator_changed(location['Existing Radiator'], new_rad_key):
                     replaced_rads.append(
                         {
                             'room_name': room_name,
-                            'location': list(new_radiators.keys())[i],
-                            'Key':  loc['Existing Radiator']
+                            'location': location['location'],
+                            'Key':  location['Existing Radiator']
                         }
                     )
 
-        print("_"*100, "End: replaced_radiators")
         return replaced_rads
+
+    def radiator_changed(self, original, potential_new):
+        if not isinstance(potential_new, str):
+            return False
+
+        if not isinstance(original, str):
+            return False
+
+        return original != potential_new
 
 #============================================================================
 file_path = 'Radiator Database.xlsx'
