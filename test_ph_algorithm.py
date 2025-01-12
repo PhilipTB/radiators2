@@ -94,11 +94,13 @@ class Home:
 
         for room in room_results:
             for location_name, location in room['locations'].items():
+                rad_status = None
+                from_loc_desc = None
                 if 'Existing' in location:
                     rad_status = location['Existing']
                     if rad_status == 'Moved':
                         from_loc = location['From']
-                        rad_status = f"Moved from {from_loc['room_name']} {from_loc['location']}"
+                        from_loc_desc = f"{from_loc['room_name']} {from_loc['location']}"
 
                 formatted_result = {
                     'room_name': room['room_name'],
@@ -107,7 +109,7 @@ class Home:
                     '£': location['£'],
                     'Labour Cost': location['Labour Cost'],
                     'Status': rad_status,
-                    'From': rad_status,
+                    'From': from_loc_desc,
                 }
                 formatted_results.append(formatted_result)
         
@@ -354,9 +356,20 @@ test_rooms = create_test_rooms()
 test_constraints = create_test_constraints()
 t1 = time.time()
 home = Home(test_rooms, test_constraints, rad_db)
+print("Flow temperature", 50.0)
 results = home.minimal_cost_radiators(50.0)
+print("="*100)
+
+print("Time taken", time.time() - t1)
+pprint.pp(results)
+print("Totals:")
+pprint.pp(results[['£', 'Labour Cost']].sum())
+
+print("Flow temperature", 45.0)
+results = home.minimal_cost_radiators(45.0)
 print("="*100)
 print("Time taken", time.time() - t1)
 pprint.pp(results)
 print("Totals:")
 pprint.pp(results[['£', 'Labour Cost']].sum())
+
