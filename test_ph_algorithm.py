@@ -46,14 +46,14 @@ def create_test_rooms():
 def create_test_constraints():
     test_constraints = [
         { 'name': 'lounge', 'location': 'Loc 1', 'Height': 600, 'Length': 2000, 'Depth': 'K2', 'Labour Cost':  95.0, 'Existing Radiator': 'ModernxK2x1000x600'},
-        { 'name': 'lounge', 'location': 'Loc 2', 'Height': 600, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 350.0},
-        { 'name': 'lounge', 'location': 'Loc 3', 'Height': 600, 'Length':  600, 'Depth': 'K2', 'Labour Cost': 350.0},
-        { 'name': 'lounge', 'location': 'Loc 4', 'Height': 600, 'Length':  600, 'Depth': 'K3', 'Labour Cost': 350.0},
-        { 'name': 'bed 1',  'location': 'Loc 1', 'Height': 600, 'Length': 2000, 'Depth': 'K2', 'Labour Cost':  95.0,  'Existing Radiator': 'ModernxK1x800x600'},
-        { 'name': 'bed 1',  'location': 'Loc 2', 'Height': 600, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 350.0},
-        { 'name': 'bed 2',  'location': 'Loc 1', 'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost':  95.0,  'Existing Radiator': 'ModernxK2x1400x600'},
-        { 'name': 'bed 3',  'location': 'Loc 1', 'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost':  95.0,  'Existing Radiator': 'ModernxK1x1400x600'},
-        { 'name': 'bed 4',  'location': 'Loc 1', 'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost':  95.0,  'Existing Radiator': 'ModernxK1x1800x600'}
+        { 'name': 'lounge', 'location': 'Loc 2', 'Height': 600, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 350.0, 'Existing Radiator': None},
+        { 'name': 'lounge', 'location': 'Loc 3', 'Height': 600, 'Length':  600, 'Depth': 'K2', 'Labour Cost': 350.0, 'Existing Radiator': None},
+        { 'name': 'lounge', 'location': 'Loc 4', 'Height': 600, 'Length':  600, 'Depth': 'K3', 'Labour Cost': 350.0, 'Existing Radiator': None},
+        { 'name': 'bed 1',  'location': 'Loc 1', 'Height': 600, 'Length': 2000, 'Depth': 'K2', 'Labour Cost':  95.0, 'Existing Radiator': 'ModernxK1x800x600'},
+        { 'name': 'bed 1',  'location': 'Loc 2', 'Height': 600, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 350.0, 'Existing Radiator': None},
+        { 'name': 'bed 2',  'location': 'Loc 1', 'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost':  95.0, 'Existing Radiator': 'ModernxK2x1400x600'},
+        { 'name': 'bed 3',  'location': 'Loc 1', 'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost':  95.0, 'Existing Radiator': 'ModernxK1x1400x600'},
+        { 'name': 'bed 4',  'location': 'Loc 1', 'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost':  95.0, 'Existing Radiator': 'ModernxK1x1800x600'}
     ]
 
     return pd.DataFrame(test_constraints)
@@ -94,31 +94,41 @@ class Home:
 
         for room in room_results:
             for location_name, location in room['locations'].items():
-                rad_status = None
-                from_loc_desc = None
-                print("Got here:", 'Existing' in location)
-                pprint.pp(room['locations'])
-                print(location)
-                exit()
-                if 'Existing' in location:
-                    rad_status = location['Existing']
-                    print("Blobby", rad_status)
-                    if rad_status == 'Moved':
-                        from_loc = location['From']
-                        from_loc_desc = f"{from_loc['room_name']} {from_loc['location']}"
+                location_constraint = self.find_location_constraint(room['room_name'], location_name).iloc[0]
+                existing_rad_name = location_constraint['Existing Radiator']
+                rad_status = self.radiator_change_status(existing_rad_name, location['Key'])
 
                 formatted_result = {
-                    'room_name': room['room_name'],
-                    'location_name': location_name,
-                    'radiator_name': location['Key'],
-                    '£': location['£'],
-                    'Labour Cost': location['Labour Cost'],
-                    'Status': rad_status,
-                    'From': from_loc_desc,
+                    'Room Name':            room['room_name'],
+                    'Location name':        location_name,
+                    'Originally':           existing_rad_name,
+                    'Proposed Radiator':    location['Key'],
+                    '£':                    location['£'],
+                    'Labour Cost':          location['Labour Cost'],
+                    'Status':               rad_status,
+                    'Watts':                location['w']
                 }
+
                 formatted_results.append(formatted_result)
         
         return pd.DataFrame(formatted_results)
+    
+    def radiator_change_status(self, original_name, new_name):
+        if new_name == None and original_name != None:
+            return 'Removed'
+        if original_name == new_name:
+            if original_name == None:
+                return ''
+            else:
+                return 'Original'
+        else:
+            return 'Replaced'
+
+    
+    def find_location_constraint(self, room_name, location_name):
+        df_filt1 = self.radiator_constraints.loc[self.radiator_constraints['name'] == room_name]
+        df_filt2 = df_filt1.loc[df_filt1['location'] == location_name]
+        return df_filt2
 
     def minimal_cost_radiators_in_room(self, room_df, flow_temperature):
         room_name = room_df['name']
@@ -179,6 +189,8 @@ class Home:
     
     @classmethod
     def wattage_at_flow_temperature(cls, rad, room_temperature, flow_temperature):
+        print('Not here')
+        exit()
         return rad["W @ dt 50"]
         n = rad['N']
         watts_at_dt_50 = rad["W @ dt 50"]
@@ -217,9 +229,6 @@ class Home:
         new_radiators = []
         for room in room_results:
             for location_name, location in room['locations'].items():
-                pprint.pp(room)
-                print("$"*100)
-                exit()
                 if location.get('Existing') == 'New':
                     room_name = room['room_name']
                     new_radiators.append(
@@ -267,6 +276,8 @@ class Room:
 
         replaced_rads = self.replaced_radiators(self.name(), rads, self.location_constraints)
 
+        pprint.pp(rads)
+
         return {'cost': cost, 'locations': rads, 'replaced_radiators': replaced_rads}
 
     def minimum_radiator_cost_combination(self, combos, constraints, min_wattage):
@@ -292,7 +303,7 @@ class Room:
             existing_rad = self.find_radiator(constraint['Existing Radiator'])
             factor = (flow_temperature - 2.5 - self.room_temperature()) / 50.0
             watts_at_flow = existing_rad['W @ dt 50'] * factor ** existing_rad['N']
-            return self.add_radiator(possible_rads, existing_rad['Key'], watts_at_flow, 0.0, 0.0)
+            return self.add_radiator(possible_rads, existing_rad['Key'], watts_at_flow, 0.0, 0.0, True)
 
         return possible_rads
 
@@ -302,19 +313,20 @@ class Room:
     def existing_radiator(self, constraint):
         return 'Existing Radiator' in constraint and isinstance(constraint['Existing Radiator'], str)
 
-    def add_radiator(self, rads, key, w, cost, labour_cost):
+    def add_radiator(self, rads, key, w, cost, labour_cost, existing):
         new_rad = {
             'Key':          key,
             'w':            w,
             '£':            cost,
-            'Labour Cost': labour_cost
+            'Labour Cost':  labour_cost,
+            'Existing':     existing
         }
         new_rad_df = pd.DataFrame(new_rad, index=[0])
 
         return pd.concat([new_rad_df, rads], ignore_index=True)
 
     def add_no_radiator_to_possible_radiators(self, possible_rads, constraint):
-        return self.add_radiator(possible_rads, None, 0.0, 0.0, 0.0)
+        return self.add_radiator(possible_rads, None, 0.0, 0.0, 0.0, False)
 
     def all_combinations(self, flow_temperature):
         possible_rads_at_location = []
@@ -322,7 +334,7 @@ class Room:
         for name, constraint in self.location_constraints.iterrows():
             rads = self.radiator_choices_at_location(constraint)
 
-            rads['Labour Cost'] = 95.0
+            rads['Labour Cost'] = constraint['Labour Cost']
             
             rads = self.add_existing_radiators_to_possible_radiators(rads, constraint, flow_temperature)
             rads = self.add_no_radiator_to_possible_radiators(rads, constraint)
@@ -346,20 +358,6 @@ class Room:
             watts += rad['w']
 
         return [costs, watts]
-
-    def deprecated():
-        rad_cost = rad["£"]
-        labour_cost = labour_costs[i]
-
-        if rad_cost > 0.0:
-            costs += rad_cost + labour_cost
-
-        if rad_cost != rad["Total £"]:
-            print(rad_cost)
-            pprint.pp(rad)
-            exit()
-        if not 'Existing Radiator' in rad:
-            rad['Existing'] = 'New'
 
     def replaced_radiators(self, room_name, new_radiators, constraints):
         replaced_rads = []
