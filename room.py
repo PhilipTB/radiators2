@@ -19,11 +19,11 @@ class Room:
             cost, rads = self.maximal_radiator_wattage_combination(combos, self.location_constraints)
 
         print("Time taken", round(time.time() - t0, 2), "s for", len(combos), "combinations")
-        replaced_rads = self.replaced_radiators(self.room['name'], rads, self.location_constraints)
+        replaced_rads = self.replaced_radiators(self.room['Room Name'], rads, self.location_constraints)
         return {'cost': cost, 'locations': rads, 'replaced_radiators': replaced_rads}
 
     def pre_calculate_radiator_wattage_at_flow(self, flow_temperature):
-        factor = (flow_temperature - 2.5 - self.room['room_temperature']) / 50.0
+        factor = (flow_temperature - 2.5 - self.room['Room Temperature']) / 50.0
         self.radiator_database['w'] = self.radiator_database['W @ dt 50'] * factor ** self.radiator_database['N']
 
     def all_combinations(self, flow_temperature):
@@ -46,7 +46,7 @@ class Room:
     def add_existing_radiators_to_possible_radiators(self, possible_rads, constraint, flow_temperature):
         if 'Existing Radiator' in constraint and isinstance(constraint['Existing Radiator'], str):
             existing_rad = self.find_radiator(constraint['Existing Radiator'])
-            factor = (flow_temperature - 2.5 - self.room['room_temperature']) / 50.0
+            factor = (flow_temperature - 2.5 - self.room['Room Temperature']) / 50.0
             watts_at_flow = existing_rad['W @ dt 50'] * factor ** existing_rad['N']
             return self.add_radiator(possible_rads, existing_rad['Radiator Key'], watts_at_flow, 0.0, 0.0, 'Original')
         return possible_rads
@@ -61,7 +61,7 @@ class Room:
     def minimum_radiator_cost_combination(self, combos, constraints, min_wattage):
         min_cost = float('inf')
         min_rads = None
-        location_names = constraints['location'].tolist()
+        location_names = constraints['Location'].tolist()
         labour_costs = constraints['Labour Cost'].tolist()
 
         # speed critical, optimised loop
@@ -78,7 +78,7 @@ class Room:
     def maximal_radiator_wattage_combination(self, combos, constraints):
         max_watts = -1
         max_rads = None
-        location_names = constraints['location'].tolist()
+        location_names = constraints['Location'].tolist()
         labour_costs = constraints['Labour Cost'].tolist()
 
         # speed critical, optimised loop
@@ -104,9 +104,9 @@ class Room:
 
     def replaced_radiators(self, room_name, new_radiators, constraints):
         return [
-            {'room_name': room_name, 'location': loc['location'], 'Radiator Key': loc['Existing Radiator']}
+            {'room_name': room_name, 'Location': loc['Location'], 'Radiator Key': loc['Existing Radiator']}
             for _, loc in constraints.iterrows()
-            if 'Existing Radiator' in loc and self.radiator_changed(loc['Existing Radiator'], new_radiators[loc['location']]['Radiator Key'])
+            if 'Existing Radiator' in loc and self.radiator_changed(loc['Existing Radiator'], new_radiators[loc['Location']]['Radiator Key'])
         ]
 
     def radiator_changed(self, original, potential_new):
