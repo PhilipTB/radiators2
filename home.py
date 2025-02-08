@@ -49,7 +49,7 @@ class Home:
 
     def radiator_change_status(self, original_name, new_name, location):
         if 'Status' in location and location['Status'] == 'Moved':
-            return f"Moved:{location['From']['room_name']}:{location['From']['location']}"
+            return f"Moved:{location['From']['room_name']}:{location['From']['Location']}"
         if new_name is None and original_name is not None:
             return 'Removed'
         if original_name == new_name:
@@ -57,16 +57,16 @@ class Home:
         return 'Replaced'
 
     def find_location_constraint(self, room_name, location_name):
-        return self.radiator_constraints[(self.radiator_constraints['name'] == room_name) & 
-                                         (self.radiator_constraints['location'] == location_name)]
+        return self.radiator_constraints[(self.radiator_constraints['Room Name'] == room_name) & 
+                                         (self.radiator_constraints['Location'] == location_name)]
 
     def minimal_cost_radiators_in_room(self, room_df, flow_temperature):
-        room_name = room_df['name']
-        location_constraints = self.radiator_constraints[self.radiator_constraints['name'] == room_name]
+        room_name = room_df['Room Name']
+        location_constraints = self.radiator_constraints[self.radiator_constraints['Room Name'] == room_name]
         room = Room(room_df, location_constraints, self.radiator_database)
         room_result = room.minimal_cost_radiators(flow_temperature)
         room_result['room_name'] = room_name
-        room_result['room_temperature'] = room_df['room_temperature']
+        room_result['Room Temperature'] = room_df['Room Temperature']
         return room_result
 
     def total_costs(self, room_results):
@@ -86,7 +86,7 @@ class Home:
         for replacement_rad in replaced_rads:
             for new_radiator in new_radiators:
                 location_constraint = self.find_constraint(new_radiator['room_name'], new_radiator['location_name'])
-                result_location = self.find_location_in_room_results(room_results, location_constraint['name'], location_constraint['location'])
+                result_location = self.find_location_in_room_results(room_results, location_constraint['Room Name'], location_constraint['Location'])
 
                 if replacement_rad['specification']['w'] >= new_radiator['radiator']['w'] and \
                    Radiator.radiator_fits(location_constraint, replacement_rad['specification']) and \
@@ -98,8 +98,8 @@ class Home:
                     break
 
     def find_constraint(self, room_name, location_name):
-        return self.radiator_constraints[(self.radiator_constraints['name'] == room_name) & 
-                                         (self.radiator_constraints['location'] == location_name)].iloc[0]
+        return self.radiator_constraints[(self.radiator_constraints['Room Name'] == room_name) & 
+                                         (self.radiator_constraints['Location'] == location_name)].iloc[0]
 
     def find_location_in_room_results(self, room_results, room_name, location_name):
         return self.find_room_in_room_results(room_results, room_name)['locations'][location_name]
@@ -119,7 +119,7 @@ class Home:
                         'room_name': room['room_name'],
                         'location_name': location_name,
                         'radiator': location,
-                        'room_temperature': room['room_temperature']
+                        'Room Temperature': room['Room Temperature']
                     })
         new_radiators.sort(reverse=True, key=lambda rad: rad['radiator']['£'])
         return new_radiators
