@@ -27,11 +27,11 @@ def load_table_into_dataframe(file_path, sheet_name, table_name):
 #============================================================================
 def create_test_rooms():
     test_rooms = [
-        {'Room Name': 'lounge', 'Room Temperature': 21.5, 'min_wattage': 4000},
-        {'Room Name': 'bed 1',  'Room Temperature': 21.5, 'min_wattage': 500},
-        {'Room Name': 'bed 2',  'Room Temperature': 21.5, 'min_wattage': 1000},
-        {'Room Name': 'bed 3',  'Room Temperature': 21.5, 'min_wattage': 800},
-        {'Room Name': 'bed 4',  'Room Temperature': 21.5, 'min_wattage': 500},
+        {'Room Name': 'lounge', 'Room Temperature': 21.5, 'Heat Loss': 4000},
+        {'Room Name': 'bed 1',  'Room Temperature': 21.5, 'Heat Loss': 500},
+        {'Room Name': 'bed 2',  'Room Temperature': 21.5, 'Heat Loss': 1000},
+        {'Room Name': 'bed 3',  'Room Temperature': 21.5, 'Heat Loss': 800},
+        {'Room Name': 'bed 4',  'Room Temperature': 21.5, 'Heat Loss': 500},
     ]
     return pd.DataFrame(test_rooms)
 

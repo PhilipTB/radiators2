@@ -13,7 +13,7 @@ class Room:
         t0 = time.time()
         self.pre_calculate_radiator_wattage_at_flow(flow_temperature)
         combos = self.all_combinations(flow_temperature)
-        cost, rads = self.minimum_radiator_cost_combination(combos, self.location_constraints, self.room['min_wattage'])
+        cost, rads = self.minimum_radiator_cost_combination(combos, self.location_constraints, self.room['Heat Loss'])
 
         if rads == None: # not enough capacity wthin constraints, just find max capacity whatever the cost
             cost, rads = self.maximal_radiator_wattage_combination(combos, self.location_constraints)

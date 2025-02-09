@@ -4,7 +4,7 @@ from room import Room
 
 class Home:
     def __init__(self, rooms, radiator_constraints, radiator_database):
-        self.rooms = rooms
+        self.rooms = rooms.dropna()
         self.radiator_constraints = radiator_constraints
         self.radiator_database = radiator_database
         self.add_radiator_depth_mm()
