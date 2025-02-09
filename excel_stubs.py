@@ -1,4 +1,6 @@
-# imports
+#=======================================================================================================
+# Libraries
+
 import pandas as pd
 pd.options.mode.chained_assignment = None
 from openpyxl import load_workbook
@@ -9,6 +11,8 @@ import itertools
 import pprint
 
 #=======================================================================================================
+# Load Tables
+
 def load_dataframes_from_excel():
     rad_db = xl("RadiatorDatabase[#All]", headers=True)
     rooms = xl("Rooms[#All]", headers=True)
@@ -21,9 +25,8 @@ rad_db, rooms, max_sizes, labour_costs, flow_rate_scenario = load_dataframes_fro
 
 home = Home(rooms, max_sizes, rad_db)
 
-flow_temperature = xl("A31")
+#=======================================================================================================
+# Calculate Results Flow Temperature => Dataframe
 
-results = home.minimal_cost_radiators(flow_temperature)
-
-results
+home.minimal_cost_radiators(xl("A32"))
 
