@@ -25,7 +25,7 @@ def load_table_into_dataframe(file_path, sheet_name, table_name):
     return df
 
 #============================================================================
-def create_test_rooms():
+def create_test_rooms_v2():
     test_rooms = [
         {'Room Name': 'lounge', 'Room Temperature': 21.5, 'Heat Loss': 4000},
         {'Room Name': 'bed 1',  'Room Temperature': 21.5, 'Heat Loss': 500},
@@ -35,8 +35,15 @@ def create_test_rooms():
     ]
     return pd.DataFrame(test_rooms)
 
+def create_test_rooms():
+    test_rooms = [
+        {'Room Name': 'Main bed', 'Room Temperature': 18, 'Heat Loss': 684},
+        {'Room Name': 'Utility',  'Room Temperature': 18, 'Heat Loss': 115},
+    ]
+    return pd.DataFrame(test_rooms)
+
 #============================================================================
-def create_test_constraints():
+def create_test_constraints_v2():
     test_constraints = [
         {'Room Name': 'lounge', 'Location': 'Loc 1', 'Type': 'Modern', 'Height': 600, 'Length': 2000, 'Depth': 'K2', 'Labour Cost':  95.0, 'Existing Radiator': 'ModernxK2x1800x600'},
         {'Room Name': 'lounge', 'Location': 'Loc 2', 'Type': 'Modern', 'Height': 600, 'Length': 2000, 'Depth': 'K3', 'Labour Cost': 350.0, 'Existing Radiator': None},
@@ -47,6 +54,13 @@ def create_test_constraints():
         {'Room Name': 'bed 2',  'Location': 'Loc 1', 'Type': 'Modern', 'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost':  95.0, 'Existing Radiator': 'ModernxK2x1400x600'},
         {'Room Name': 'bed 3',  'Location': 'Loc 1', 'Type': 'Modern', 'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost':  95.0, 'Existing Radiator': 'ModernxK1x1400x600'},
         {'Room Name': 'bed 4',  'Location': 'Loc 1', 'Type': 'Modern', 'Height': 900, 'Length': 2000, 'Depth': 'K3', 'Labour Cost':  95.0, 'Existing Radiator': 'ModernxK1x1800x600'}
+    ]
+    return pd.DataFrame(test_constraints)
+
+def create_test_constraints():
+    test_constraints = [
+        {'Room Name': 'Main bed', 'Location': 'Loc1', 'Type': 'Modern', 'Height': 600, 'Length': 1000, 'Depth': 'K3', 'Labour Cost':  95.0, 'Existing Radiator': 'ModernxK1x900x600'},
+        {'Room Name': 'Utility',  'Location': 'Loc1', 'Type': 'Modern', 'Height': 700, 'Length': 1000, 'Depth': 'K3', 'Labour Cost': 95.0,  'Existing Radiator': 'ModernxK1x600x700'},
     ]
     return pd.DataFrame(test_constraints)
 

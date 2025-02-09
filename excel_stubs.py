@@ -17,13 +17,11 @@ def load_dataframes_from_excel():
     rad_db = xl("RadiatorDatabase[#All]", headers=True)
     rooms = xl("Rooms[#All]", headers=True)
     max_sizes = xl("RoomEmittersMaxSizes", headers=True)
-    labour_costs = xl("LabourCosts", headers=True)
-    flow_rate_scenario = xl("FlowRateScenario", headers=True)
-    return rad_db, rooms, max_sizes, labour_costs, flow_rate_scenario
+    return rad_db, rooms, max_sizes
 
-rad_db, rooms, max_sizes, labour_costs, flow_rate_scenario = load_dataframes_from_excel()
+rad_db, rooms, max_sizes = load_dataframes_from_excel()
 
-home = Home(rooms, max_sizes, rad_db)
+home = Home(rooms, max_sizes, rad_db, xl("B5"))
 
 #=======================================================================================================
 # Calculate Results Flow Temperature => Dataframe
