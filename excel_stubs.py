@@ -21,7 +21,7 @@ def load_dataframes_from_excel():
 
 rad_db, rooms, max_sizes = load_dataframes_from_excel()
 
-home = Home(rooms, max_sizes, rad_db, xl("B5"))
+home = Home(rooms, max_sizes, rad_db)
 
 #=======================================================================================================
 # Calculate Results Flow Temperature => Dataframe

@@ -4,11 +4,10 @@ import itertools
 from radiator import Radiator
 
 class Room:
-    def __init__(self, room, location_constraints, radiator_database, design_temperature):
+    def __init__(self, room, location_constraints, radiator_database):
         self.room = room
         self.location_constraints = location_constraints
         self.radiator_database = radiator_database
-        self.design_temperature = design_temperature
 
     def minimal_cost_radiators(self, flow_temperature):
         t0 = time.time()
@@ -24,7 +23,7 @@ class Room:
         return {'cost': cost, 'locations': rads, 'replaced_radiators': replaced_rads}
 
     def pre_calculate_radiator_wattage_at_flow(self, flow_temperature):
-        factor = (flow_temperature - self.design_temperature - self.room['Room Temperature']) / 50.0
+        factor = (flow_temperature - 2.5 - self.room['Room Temperature']) / 50.0
         self.radiator_database['w'] = self.radiator_database['W @ dt 50'] * factor ** self.radiator_database['N']
 
     def all_combinations(self, flow_temperature):
@@ -47,7 +46,7 @@ class Room:
     def add_existing_radiators_to_possible_radiators(self, possible_rads, constraint, flow_temperature):
         if 'Existing Radiator' in constraint and isinstance(constraint['Existing Radiator'], str):
             existing_rad = self.find_radiator(constraint['Existing Radiator'])
-            factor = (flow_temperature - self.design_temperature - self.room['Room Temperature']) / 50.0
+            factor = (flow_temperature - 2.5 - self.room['Room Temperature']) / 50.0
             watts_at_flow = existing_rad['W @ dt 50'] * factor ** existing_rad['N']
             return self.add_radiator(possible_rads, existing_rad['Radiator Key'], watts_at_flow, 0.0, 0.0, 'Original')
         return possible_rads

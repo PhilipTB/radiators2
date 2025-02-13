@@ -3,11 +3,10 @@ from radiator import Radiator
 from room import Room
 
 class Home:
-    def __init__(self, rooms, radiator_constraints, radiator_database, design_temperature):
+    def __init__(self, rooms, radiator_constraints, radiator_database):
         self.rooms = rooms.dropna()
         self.radiator_constraints = radiator_constraints
         self.radiator_database = radiator_database
-        self.design_temperature = design_temperature
         self.add_radiator_depth_mm()
 
     def minimal_cost_radiators(self, flow_temperature):
@@ -64,7 +63,7 @@ class Home:
     def minimal_cost_radiators_in_room(self, room_df, flow_temperature):
         room_name = room_df['Room Name']
         location_constraints = self.radiator_constraints[self.radiator_constraints['Room Name'] == room_name]
-        room = Room(room_df, location_constraints, self.radiator_database, self.design_temperature)
+        room = Room(room_df, location_constraints, self.radiator_database)
         room_result = room.minimal_cost_radiators(flow_temperature)
         room_result['room_name'] = room_name
         room_result['Room Temperature'] = room_df['Room Temperature']
