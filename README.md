@@ -9,3 +9,4 @@
 - [ ] add insulation upgrade selector and proforma text
 - [ ] add Python don't calculate flag
 - [ ] implement retain/replace logic for individual radiators
+- [ ] access SAP data
