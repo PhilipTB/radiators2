@@ -1,5 +1,6 @@
 class Radiator:
     radiator_depth_mm_data = {
+        'K0':  70, # 1 panel
         '10':  70, # 1 panel 0 fins
         'P1':  70,
         'K1':  80, # 1 panel 1 fin
