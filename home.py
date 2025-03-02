@@ -4,7 +4,7 @@ from room import Room
 
 class Home:
     def __init__(self, rooms, radiator_constraints, radiator_database):
-        self.rooms = rooms.dropna()
+        self.rooms = self.clean_and_check_room_df(rooms)
         self.radiator_constraints = radiator_constraints
         self.radiator_database = radiator_database
         self.add_radiator_depth_mm()
@@ -21,6 +21,9 @@ class Home:
         print("Total cost after moves:", total_cost)
 
         return self.convert_results_to_dataframe(room_results)
+    
+    def clean_and_check_room_df(self, rooms):
+        return rooms.drop(rooms[rooms['Heat Loss'] == 0.0].index)
 
     def add_radiator_depth_mm(self):
         self.radiator_database['Depth_mm'] = self.radiator_database.apply(lambda row: Radiator.radiator_depth_mm(row.Depth), axis = 1)
