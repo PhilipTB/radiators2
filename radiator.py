@@ -11,12 +11,12 @@ class Radiator:
         '22': 125,
         'K3': 160, # 3 panels 3 fins
         '33': 160,
-        '2 Col':  90,
-        '3 Col': 115,
-        '4 Col': 140,
-        '5 Col': 175,
-        '6 Col': 210,
-        '7 Col': 245,
+        '2col':  90,
+        '3col': 115,
+        '4col': 140,
+        '5col': 175,
+        '6col': 210,
+        '7col': 245,
         None:   None,
     }
 
