@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotate Button on Click</title>
+    <style>
+        /* Style for the square box */
+        .square-box {
+            width: 300px;
+            height: 300px;
+            border: 2px solid black;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* Initial button style */
+        .rotate-button {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.3s ease; /* Smooth rotation transition */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="square-box">
+        <button class="rotate-button" onclick="rotateButton(this)">One</button>
+        <button class="rotate-button" onclick="rotateButton(this)">Two</button>
+        <button class="rotate-button" onclick="rotateButton(this)">Three</button>
+    </div>
+
+    <script>
+        // JavaScript function to rotate the button by 90 degrees each time it's clicked
+        function rotateButton(button) {
+            // Get the current rotation angle from the button's style
+            let currentRotation = 0;
+            if (button.style.transform) {
+                // Extract the numeric value from the transform property (e.g., "rotate(90deg)" -> 90)
+                currentRotation = parseInt(button.style.transform.match(/\d+/)[0]);
+            }
+
+            // Calculate the new rotation angle (add 90 degrees)
+            const newRotation = (currentRotation + 90) % 360; // Ensure it stays within 0-360 degrees
+
+            // Apply the new rotation to the button
+            button.style.transform = `rotate(${newRotation}deg)`;
+        }
+    </script>
+
+</body>
+</html>
