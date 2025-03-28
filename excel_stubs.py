@@ -9,6 +9,8 @@ from scipy.optimize import minimize
 import time
 import itertools
 import pprint
+import traceback
+
 
 #=======================================================================================================
 # Load Tables
@@ -32,13 +34,20 @@ else:
 #=======================================================================================================
 # Calculate Results Flow Temperature => Dataframe
 
+radiator_choice = None
+
 if (xl("CalculateRadiatorChoicesFlag")):
-    homex = home.minimal_cost_radiators(xl("A9"))
+    try:
+        flow_temperature = xl("A9")
+        print("Starting minimum radiator calculation at flow temperature:", flow_temperature)
+        radiator_choice = home.minimal_cost_radiators(flow_temperature)
+    except Exception as e:
+        print(traceback.format_exc())
     print("Calculations turned on")
-    homex
+    radiator_choice
 else:
     print("Calculations turned off")
-homex
+radiator_choice
 
 
 

@@ -31,6 +31,13 @@ class Room:
         for _, constraint in self.location_constraints.iterrows():
             rads = Radiator.radiator_choices_at_location(self.radiator_database, constraint)
 
+            if len(rads) <= 0:
+                print("="*60)
+                print("No radiators in database for room", self.room['Room Name'])
+                print("Constraint: L=", constraint['Length'], "H=", constraint['Height'], "D=", constraint['Depth'],"T=", constraint['Type'])
+                print("="*60)
+                return []
+
             # Fix: Use .loc to assign values
             rads.loc[:, 'Labour Cost'] = constraint['Labour Cost']
             rads.loc[:, 'Status'] = 'New'
